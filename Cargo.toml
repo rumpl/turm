@@ -1,0 +1,11 @@
+[package]
+name = "turm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nix = { version = "0.27.1", features = ["process", "term", "fs"] }
+eframe = "0.26.2"
+egui = "0.26.2"
