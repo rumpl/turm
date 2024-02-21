@@ -57,7 +57,7 @@ pub struct Ansi {
 }
 
 #[derive(Clone, Copy)]
-pub enum SelectGraphicsRendition {
+pub enum SelectGraphicRendition {
     Reset,
     ForegroundBlack,
     ForegroundRed,
@@ -65,21 +65,21 @@ pub enum SelectGraphicsRendition {
     ForegroundYellow,
 }
 
-impl From<usize> for SelectGraphicsRendition {
+impl From<usize> for SelectGraphicRendition {
     fn from(item: usize) -> Self {
         match item {
-            30 => SelectGraphicsRendition::ForegroundBlack,
-            31 => SelectGraphicsRendition::ForegroundRed,
-            32 => SelectGraphicsRendition::ForegroundGreen,
-            33 => SelectGraphicsRendition::ForegroundYellow,
-            _ => SelectGraphicsRendition::Reset,
+            30 => SelectGraphicRendition::ForegroundBlack,
+            31 => SelectGraphicRendition::ForegroundRed,
+            32 => SelectGraphicRendition::ForegroundGreen,
+            33 => SelectGraphicRendition::ForegroundYellow,
+            _ => SelectGraphicRendition::Reset,
         }
     }
 }
 
 pub enum AnsiOutput {
     Text(Vec<u8>),
-    SGR(SelectGraphicsRendition),
+    SGR(SelectGraphicRendition),
 }
 
 impl Ansi {
@@ -105,6 +105,7 @@ impl Ansi {
                 AnsiState::Escape => match *b {
                     ansi_codes::ESC_START => {
                         self.state = AnsiState::CSI(CSIParser::new());
+                        println!("Hello world");
                     }
                     _ => {
                         println!("unknown ansi {b}");

@@ -3,7 +3,7 @@ use std::{
     os::fd::{AsRawFd, OwnedFd},
 };
 
-use ansi::{Ansi, AnsiOutput, SelectGraphicsRendition};
+use ansi::{Ansi, AnsiOutput, SelectGraphicRendition};
 use eframe::egui;
 use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Rect, TextStyle};
 
@@ -152,13 +152,13 @@ impl eframe::App for Turm {
     }
 }
 
-impl From<SelectGraphicsRendition> for Color32 {
-    fn from(sgr: SelectGraphicsRendition) -> Self {
+impl From<SelectGraphicRendition> for Color32 {
+    fn from(sgr: SelectGraphicRendition) -> Self {
         match sgr {
-            SelectGraphicsRendition::ForegroundBlack => Color32::BLACK,
-            SelectGraphicsRendition::ForegroundRed => Color32::RED,
-            SelectGraphicsRendition::ForegroundGreen => Color32::GREEN,
-            SelectGraphicsRendition::ForegroundYellow => Color32::YELLOW,
+            SelectGraphicRendition::ForegroundBlack => Color32::BLACK,
+            SelectGraphicRendition::ForegroundRed => Color32::RED,
+            SelectGraphicRendition::ForegroundGreen => Color32::GREEN,
+            SelectGraphicRendition::ForegroundYellow => Color32::YELLOW,
             _ => Color32::WHITE,
         }
     }
