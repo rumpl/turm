@@ -56,6 +56,7 @@ pub struct Ansi {
     state: AnsiState,
 }
 
+#[derive(Clone, Copy)]
 pub enum SelectGraphicsRendition {
     Reset,
     ForegroundBlack,

@@ -131,13 +131,7 @@ impl eframe::App for Turm {
                         );
                     }
                     AnsiOutput::SGR(c) => {
-                        color = match c {
-                            SelectGraphicsRendition::ForegroundBlack => Color32::BLACK,
-                            SelectGraphicsRendition::ForegroundRed => Color32::RED,
-                            SelectGraphicsRendition::ForegroundGreen => Color32::GREEN,
-                            SelectGraphicsRendition::ForegroundYellow => Color32::YELLOW,
-                            _ => Color32::WHITE,
-                        };
+                        color = (*c).into();
                     }
                 }
             }
@@ -155,5 +149,17 @@ impl eframe::App for Turm {
             let size = egui::vec2(10.0, 25.0);
             painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::GRAY);
         });
+    }
+}
+
+impl From<SelectGraphicsRendition> for Color32 {
+    fn from(sgr: SelectGraphicsRendition) -> Self {
+        match sgr {
+            SelectGraphicsRendition::ForegroundBlack => Color32::BLACK,
+            SelectGraphicsRendition::ForegroundRed => Color32::RED,
+            SelectGraphicsRendition::ForegroundGreen => Color32::GREEN,
+            SelectGraphicsRendition::ForegroundYellow => Color32::YELLOW,
+            _ => Color32::WHITE,
+        }
     }
 }
