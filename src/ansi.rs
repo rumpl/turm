@@ -56,7 +56,7 @@ pub struct Ansi {
     state: AnsiState,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum SelectGraphicRendition {
     Reset,
     ForegroundBlack,
@@ -77,6 +77,7 @@ impl From<usize> for SelectGraphicRendition {
     }
 }
 
+#[derive(Debug)]
 pub enum AnsiOutput {
     Text(Vec<u8>),
     SGR(SelectGraphicRendition),
@@ -91,7 +92,7 @@ impl Ansi {
 
     pub fn push(&mut self, data: &[u8]) -> Vec<AnsiOutput> {
         let mut res = vec![];
-        let mut text_output = vec![];
+        let mut text_output = Vec::new();
 
         for b in data {
             match &mut self.state {
@@ -102,31 +103,34 @@ impl Ansi {
                     }
                     text_output.push(*b);
                 }
-                AnsiState::Escape => match *b {
-                    ansi_codes::ESC_START => {
-                        self.state = AnsiState::CSI(CSIParser::new());
-                        println!("Hello world");
+                AnsiState::Escape => {
+                    if !text_output.is_empty() {
+                        res.push(AnsiOutput::Text(std::mem::take(&mut text_output)));
                     }
-                    _ => {
-                        println!("unknown ansi {b}");
-                    }
-                },
-                AnsiState::CSI(parser) => {
-                    println!("csi parse {:x} {}", b, *b as char);
-                    match parser.push(*b) {
-                        CSIParserState::Finished(d) => {
-                            match d {
-                                ansi_codes::SGR => {
-                                    let color = parse_params(&parser.params);
-                                    res.push(AnsiOutput::SGR(color.into()));
-                                }
-                                _ => {}
-                            }
-                            self.state = AnsiState::Empty;
+                    match *b {
+                        ansi_codes::ESC_START => {
+                            self.state = AnsiState::CSI(CSIParser::new());
                         }
-                        _ => {}
+                        _ => {
+                            println!("unknown ansi {b}");
+                        }
                     }
                 }
+                AnsiState::CSI(parser) => match parser.push(*b) {
+                    CSIParserState::Finished(d) => {
+                        match d {
+                            ansi_codes::SGR => {
+                                let params = parse_params(&parser.params);
+                                for param in params {
+                                    res.push(AnsiOutput::SGR(param.into()));
+                                }
+                            }
+                            _ => {}
+                        }
+                        self.state = AnsiState::Empty;
+                    }
+                    _ => {}
+                },
             }
         }
 
@@ -138,9 +142,14 @@ impl Ansi {
     }
 }
 
-fn parse_params(params: &[u8]) -> usize {
-    // TODO: this is not how params work, there can be more than one, separated by ";"
-    // and they can be empty, which means ... 0?
-    let str = std::str::from_utf8(params).expect("parameters should be valid utf8");
-    str.parse().expect("should be a number")
+fn parse_params(params: &[u8]) -> Vec<usize> {
+    params
+        .split(|v| *v == b';')
+        .map(parse_usize_param)
+        .collect()
+}
+
+fn parse_usize_param(param: &[u8]) -> usize {
+    let str = std::str::from_utf8(param).expect("Shoud be a number");
+    str.parse().map_or(0, |v| v)
 }

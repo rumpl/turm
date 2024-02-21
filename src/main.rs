@@ -155,11 +155,11 @@ impl eframe::App for Turm {
 impl From<SelectGraphicRendition> for Color32 {
     fn from(sgr: SelectGraphicRendition) -> Self {
         match sgr {
+            SelectGraphicRendition::Reset => Color32::WHITE,
             SelectGraphicRendition::ForegroundBlack => Color32::BLACK,
             SelectGraphicRendition::ForegroundRed => Color32::RED,
             SelectGraphicRendition::ForegroundGreen => Color32::GREEN,
             SelectGraphicRendition::ForegroundYellow => Color32::YELLOW,
-            _ => Color32::WHITE,
         }
     }
 }
