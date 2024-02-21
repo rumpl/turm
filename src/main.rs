@@ -3,11 +3,12 @@ use std::{
     os::fd::{AsRawFd, OwnedFd},
 };
 
-use ansi::{Ansi, AnsiOutput};
+use ansi::{Ansi, AnsiOutput, SelectGraphicsRendition};
 use eframe::egui;
 use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Rect, TextStyle};
 
 mod ansi;
+mod ansi_codes;
 
 fn set_nonblock(fd: &OwnedFd) {
     let flags = nix::fcntl::fcntl(fd.as_raw_fd(), nix::fcntl::FcntlArg::F_GETFL).unwrap();
@@ -56,7 +57,7 @@ impl Turm {
         cc.egui_ctx.style_mut(|style| {
             style.override_text_style = Some(TextStyle::Monospace);
             for (_text_style, font_id) in style.text_styles.iter_mut() {
-                font_id.size = 24.0 // whatever size you want here
+                font_id.size = 24.0
             }
         });
         Self {
@@ -129,10 +130,15 @@ impl eframe::App for Turm {
                             },
                         );
                     }
-                    AnsiOutput::Color(c) => match c {
-                        31 => color = Color32::RED,
-                        _ => color = Color32::WHITE,
-                    },
+                    AnsiOutput::SGR(c) => {
+                        color = match c {
+                            SelectGraphicsRendition::ForegroundBlack => Color32::BLACK,
+                            SelectGraphicsRendition::ForegroundRed => Color32::RED,
+                            SelectGraphicsRendition::ForegroundGreen => Color32::GREEN,
+                            SelectGraphicsRendition::ForegroundYellow => Color32::YELLOW,
+                            _ => Color32::WHITE,
+                        };
+                    }
                 }
             }
 

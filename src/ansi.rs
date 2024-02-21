@@ -1,3 +1,14 @@
+use crate::ansi_codes;
+
+fn is_csi_terminator(b: u8) -> bool {
+    (0x40..=0x7e).contains(&b)
+}
+
+fn is_csi_param(b: u8) -> bool {
+    (0x30..=0x3f).contains(&b)
+}
+
+#[derive(Clone, Copy)]
 enum CSIParserState {
     Parameters,
     Intermediates,
@@ -10,14 +21,6 @@ struct CSIParser {
     state: CSIParserState,
 }
 
-fn is_csi_terminator(b: u8) -> bool {
-    (0x40..=0x7e).contains(&b)
-}
-
-fn is_csi_param(b: u8) -> bool {
-    (0x30..=0x3f).contains(&b)
-}
-
 impl CSIParser {
     fn new() -> Self {
         Self {
@@ -26,7 +29,7 @@ impl CSIParser {
         }
     }
 
-    fn push(&mut self, b: u8) {
+    fn push(&mut self, b: u8) -> CSIParserState {
         match &mut self.state {
             CSIParserState::Parameters => {
                 if is_csi_terminator(b) {
@@ -39,6 +42,7 @@ impl CSIParser {
             CSIParserState::Finished(_) => {}
             CSIParserState::Invalid => {}
         }
+        self.state
     }
 }
 
@@ -52,9 +56,29 @@ pub struct Ansi {
     state: AnsiState,
 }
 
+pub enum SelectGraphicsRendition {
+    Reset,
+    ForegroundBlack,
+    ForegroundRed,
+    ForegroundGreen,
+    ForegroundYellow,
+}
+
+impl From<usize> for SelectGraphicsRendition {
+    fn from(item: usize) -> Self {
+        match item {
+            30 => SelectGraphicsRendition::ForegroundBlack,
+            31 => SelectGraphicsRendition::ForegroundRed,
+            32 => SelectGraphicsRendition::ForegroundGreen,
+            33 => SelectGraphicsRendition::ForegroundYellow,
+            _ => SelectGraphicsRendition::Reset,
+        }
+    }
+}
+
 pub enum AnsiOutput {
     Text(Vec<u8>),
-    Color(usize),
+    SGR(SelectGraphicsRendition),
 }
 
 impl Ansi {
@@ -71,29 +95,28 @@ impl Ansi {
         for b in data {
             match &mut self.state {
                 AnsiState::Empty => {
-                    if *b == b'\x1b' {
+                    if *b == ansi_codes::ESC {
                         self.state = AnsiState::Escape;
                         continue;
                     }
                     text_output.push(*b);
                 }
-                AnsiState::Escape => match b {
-                    b'[' => {
+                AnsiState::Escape => match *b {
+                    ansi_codes::ESC_START => {
                         self.state = AnsiState::CSI(CSIParser::new());
                     }
                     _ => {
-                        println!("ugh");
+                        println!("unknown ansi {b}");
                     }
                 },
                 AnsiState::CSI(parser) => {
-                    parser.push(*b);
                     println!("csi parse {:x} {}", b, *b as char);
-                    match parser.state {
+                    match parser.push(*b) {
                         CSIParserState::Finished(d) => {
                             match d {
-                                b'm' => {
+                                ansi_codes::SGR => {
                                     let color = parse_params(&parser.params);
-                                    res.push(AnsiOutput::Color(color));
+                                    res.push(AnsiOutput::SGR(color.into()));
                                 }
                                 _ => {}
                             }
@@ -114,6 +137,8 @@ impl Ansi {
 }
 
 fn parse_params(params: &[u8]) -> usize {
+    // TODO: this is not how params work, there can be more than one, separated by ";"
+    // and they can be empty, which means ... 0?
     let str = std::str::from_utf8(params).expect("parameters should be valid utf8");
     str.parse().expect("should be a number")
 }
