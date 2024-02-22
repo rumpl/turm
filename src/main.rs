@@ -29,9 +29,10 @@ fn main() {
                 // TODO: wait for the child to exit and then exit Turm
             }
             nix::unistd::ForkResult::Child => {
+                let env = &[CStr::from_bytes_with_nul(b"TERM=turm\0").unwrap()];
                 let command = CStr::from_bytes_with_nul(b"/bin/sh\0").unwrap();
                 let args = [command];
-                let _ = nix::unistd::execv(command, &args);
+                let _ = nix::unistd::execve(command, &args, env);
             }
         }
         result.master
