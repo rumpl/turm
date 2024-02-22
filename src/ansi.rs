@@ -30,6 +30,8 @@ impl CSIParser {
     }
 
     fn push(&mut self, b: u8) -> CSIParserState {
+        // TODO: matching and returning on self.state
+        // seems a bit odd, maybe find a nicer way?
         match &mut self.state {
             CSIParserState::Parameters => {
                 if is_csi_terminator(b) {
@@ -63,16 +65,40 @@ pub enum SelectGraphicRendition {
     ForegroundRed,
     ForegroundGreen,
     ForegroundYellow,
+    ForegroundBlue,
+    ForegroundMagenta,
+    ForegroundCyan,
+    ForegroundWhite,
+    ForegroundGrey,
+    ForegroundBrightRed,
+    ForegroundBrightGreen,
+    ForegroundBrightYellow,
+    ForegroundBrightBlue,
+    ForegroundBrightMagenta,
+    ForegroundBrightCyan,
+    ForegroundBrightWhite,
 }
 
 impl From<usize> for SelectGraphicRendition {
     fn from(item: usize) -> Self {
         match item {
-            30 => SelectGraphicRendition::ForegroundBlack,
-            31 => SelectGraphicRendition::ForegroundRed,
-            32 => SelectGraphicRendition::ForegroundGreen,
-            33 => SelectGraphicRendition::ForegroundYellow,
-            _ => SelectGraphicRendition::Reset,
+            30 => Self::ForegroundBlack,
+            31 => Self::ForegroundRed,
+            32 => Self::ForegroundGreen,
+            33 => Self::ForegroundYellow,
+            34 => Self::ForegroundBlue,
+            35 => Self::ForegroundMagenta,
+            36 => Self::ForegroundCyan,
+            37 => Self::ForegroundWhite,
+            90 => Self::ForegroundGrey,
+            91 => Self::ForegroundBrightRed,
+            92 => Self::ForegroundBrightGreen,
+            93 => Self::ForegroundBrightYellow,
+            94 => Self::ForegroundBrightBlue,
+            95 => Self::ForegroundBrightMagenta,
+            96 => Self::ForegroundBrightCyan,
+            97 => Self::ForegroundBrightWhite,
+            _ => Self::Reset,
         }
     }
 }

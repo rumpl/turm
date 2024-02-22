@@ -160,6 +160,18 @@ impl From<SelectGraphicRendition> for Color32 {
             SelectGraphicRendition::ForegroundRed => Color32::RED,
             SelectGraphicRendition::ForegroundGreen => Color32::GREEN,
             SelectGraphicRendition::ForegroundYellow => Color32::YELLOW,
+            SelectGraphicRendition::ForegroundBlue => Color32::BLUE,
+            SelectGraphicRendition::ForegroundMagenta => Color32::from_rgb(255, 0, 255),
+            SelectGraphicRendition::ForegroundCyan => Color32::from_rgb(0, 255, 255),
+            SelectGraphicRendition::ForegroundWhite => Color32::WHITE,
+            SelectGraphicRendition::ForegroundGrey => Color32::GRAY, // lol
+            SelectGraphicRendition::ForegroundBrightRed => Color32::RED,
+            SelectGraphicRendition::ForegroundBrightGreen => Color32::GREEN,
+            SelectGraphicRendition::ForegroundBrightYellow => Color32::YELLOW,
+            SelectGraphicRendition::ForegroundBrightBlue => Color32::BLUE,
+            SelectGraphicRendition::ForegroundBrightMagenta => Color32::from_rgb(255, 0, 255),
+            SelectGraphicRendition::ForegroundBrightCyan => Color32::from_rgb(0, 255, 255),
+            SelectGraphicRendition::ForegroundBrightWhite => Color32::WHITE,
         }
     }
 }
