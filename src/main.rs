@@ -94,6 +94,7 @@ fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
 
 impl eframe::App for Turm {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let font_size = 24.0;
         let mut buf = vec![0u8; 4096];
         let ret = nix::unistd::read(self.fd.as_raw_fd(), &mut buf);
 
@@ -108,7 +109,7 @@ impl eframe::App for Turm {
             });
 
             let font_id = FontId {
-                size: 24.0,
+                size: font_size,
                 family: FontFamily::Monospace,
             };
 
@@ -147,7 +148,7 @@ impl eframe::App for Turm {
             // This is how to paint a cursor
             let painter = ui.painter();
             let pos = egui::pos2(width * (chars) as f32 + res.rect.left(), 8.0);
-            let size = egui::vec2(width, 25.0);
+            let size = egui::vec2(width, font_size);
             painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
         });
     }
