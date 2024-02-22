@@ -156,23 +156,23 @@ impl eframe::App for Turm {
 impl From<SelectGraphicRendition> for Color32 {
     fn from(sgr: SelectGraphicRendition) -> Self {
         match sgr {
-            SelectGraphicRendition::Reset => Color32::WHITE,
-            SelectGraphicRendition::ForegroundBlack => Color32::BLACK,
-            SelectGraphicRendition::ForegroundRed => Color32::RED,
-            SelectGraphicRendition::ForegroundGreen => Color32::GREEN,
-            SelectGraphicRendition::ForegroundYellow => Color32::YELLOW,
-            SelectGraphicRendition::ForegroundBlue => Color32::BLUE,
-            SelectGraphicRendition::ForegroundMagenta => Color32::from_rgb(255, 0, 255),
-            SelectGraphicRendition::ForegroundCyan => Color32::from_rgb(0, 255, 255),
-            SelectGraphicRendition::ForegroundWhite => Color32::WHITE,
-            SelectGraphicRendition::ForegroundGrey => Color32::GRAY, // lol
-            SelectGraphicRendition::ForegroundBrightRed => Color32::RED,
-            SelectGraphicRendition::ForegroundBrightGreen => Color32::GREEN,
-            SelectGraphicRendition::ForegroundBrightYellow => Color32::YELLOW,
-            SelectGraphicRendition::ForegroundBrightBlue => Color32::BLUE,
-            SelectGraphicRendition::ForegroundBrightMagenta => Color32::from_rgb(255, 0, 255),
-            SelectGraphicRendition::ForegroundBrightCyan => Color32::from_rgb(0, 255, 255),
-            SelectGraphicRendition::ForegroundBrightWhite => Color32::WHITE,
+            SelectGraphicRendition::Reset => Self::WHITE,
+            SelectGraphicRendition::ForegroundBlack => Self::BLACK,
+            SelectGraphicRendition::ForegroundRed => Self::RED,
+            SelectGraphicRendition::ForegroundGreen => Self::GREEN,
+            SelectGraphicRendition::ForegroundYellow => Self::YELLOW,
+            SelectGraphicRendition::ForegroundBlue => Self::BLUE,
+            SelectGraphicRendition::ForegroundMagenta => Self::from_rgb(255, 0, 255),
+            SelectGraphicRendition::ForegroundCyan => Self::from_rgb(0, 255, 255),
+            SelectGraphicRendition::ForegroundWhite => Self::WHITE,
+            SelectGraphicRendition::ForegroundGrey => Self::GRAY, // lol
+            SelectGraphicRendition::ForegroundBrightRed => Self::RED,
+            SelectGraphicRendition::ForegroundBrightGreen => Self::GREEN,
+            SelectGraphicRendition::ForegroundBrightYellow => Self::YELLOW,
+            SelectGraphicRendition::ForegroundBrightBlue => Self::BLUE,
+            SelectGraphicRendition::ForegroundBrightMagenta => Self::from_rgb(255, 0, 255),
+            SelectGraphicRendition::ForegroundBrightCyan => Self::from_rgb(0, 255, 255),
+            SelectGraphicRendition::ForegroundBrightWhite => Self::WHITE,
         }
     }
 }
