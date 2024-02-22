@@ -137,7 +137,7 @@ impl eframe::App for Turm {
                 }
             }
 
-            ui.label(job);
+            let res = ui.label(job);
 
             let mut width = 0.0;
             ctx.fonts(|font| {
@@ -146,9 +146,9 @@ impl eframe::App for Turm {
 
             // This is how to paint a cursor
             let painter = ui.painter();
-            let pos = egui::pos2(width * (chars + 1) as f32 - 5.0, 8.0);
-            let size = egui::vec2(10.0, 25.0);
-            painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::GRAY);
+            let pos = egui::pos2(width * (chars) as f32 + res.rect.left(), 8.0);
+            let size = egui::vec2(width, 25.0);
+            painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
         });
     }
 }
