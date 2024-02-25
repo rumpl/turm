@@ -20,13 +20,27 @@ fn set_nonblock(fd: &OwnedFd) {
 }
 
 fn main() {
-    let options = eframe::NativeOptions::default();
-
-    let fd = unsafe {
+    unsafe {
         let result = nix::pty::forkpty(None, None).unwrap();
         match result.fork_result {
-            nix::unistd::ForkResult::Parent { child: _ } => {
-                // TODO: wait for the child to exit and then exit Turm
+            nix::unistd::ForkResult::Parent { child } => {
+                std::thread::spawn(move || {
+                    let Ok(res) = nix::sys::wait::waitpid(child, None) else {
+                        std::process::exit(-1);
+                    };
+                    match res {
+                        nix::sys::wait::WaitStatus::Exited(_, code) => std::process::exit(code),
+                        _ => std::process::exit(-1),
+                    }
+                });
+
+                set_nonblock(&result.master);
+                let options = eframe::NativeOptions::default();
+                _ = eframe::run_native(
+                    "💩 Turm 💩",
+                    options,
+                    Box::new(|cc| Box::<Turm>::new(Turm::new(cc, result.master))),
+                );
             }
             nix::unistd::ForkResult::Child => {
                 let env = &[CStr::from_bytes_with_nul(b"TERM=turm\0").unwrap()];
@@ -35,16 +49,7 @@ fn main() {
                 let _ = nix::unistd::execve(command, &args, env);
             }
         }
-        result.master
-    };
-
-    set_nonblock(&fd);
-
-    _ = eframe::run_native(
-        "💩 Turm 💩",
-        options,
-        Box::new(|cc| Box::<Turm>::new(Turm::new(cc, fd))),
-    );
+    }
 }
 
 struct Turm {
