@@ -23,6 +23,7 @@ enum CSIParserError {
     InvalidCSI,
 }
 
+#[derive(Debug, Default, Clone)]
 struct CSIParseResult {
     params: Vec<u8>,
     intermediates: Vec<u8>,
@@ -31,8 +32,7 @@ struct CSIParseResult {
 
 #[derive(Debug)]
 struct CSIParser {
-    params: Vec<u8>,
-    intermediates: Vec<u8>,
+    result: CSIParseResult,
     state: CSIParserState,
 }
 
@@ -40,8 +40,7 @@ impl CSIParser {
     fn new() -> Self {
         Self {
             state: CSIParserState::Parameters,
-            params: vec![],
-            intermediates: vec![],
+            result: CSIParseResult::default(),
         }
     }
 
@@ -50,16 +49,13 @@ impl CSIParser {
             if self.state == CSIParserState::Intermediates {
                 return Some(Err(CSIParserError::InvalidCSI));
             }
-            self.params.push(b);
+            self.result.params.push(b);
         } else if is_csi_intermediate(b) {
-            self.intermediates.push(b);
+            self.result.intermediates.push(b);
             self.state = CSIParserState::Intermediates;
         } else if is_csi_terminator(b) {
-            return Some(Ok(CSIParseResult {
-                params: self.params.clone(),
-                intermediates: self.intermediates.clone(),
-                func: b,
-            }));
+            self.result.func = b;
+            return Some(Ok(self.result.clone()));
         }
 
         None
@@ -164,7 +160,7 @@ impl Ansi {
                     Some(Ok(d)) => {
                         match d.func {
                             ansi_codes::SGR => {
-                                let params = parse_params(&parser.params);
+                                let params = parse_params(&d.params);
                                 for param in params {
                                     res.push(AnsiOutput::SGR(param.into()));
                                 }
