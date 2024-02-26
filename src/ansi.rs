@@ -8,16 +8,31 @@ fn is_csi_param(b: u8) -> bool {
     (0x30..=0x3f).contains(&b)
 }
 
-#[derive(Clone, Copy)]
+fn is_csi_intermediate(b: u8) -> bool {
+    (0x20..=0x2f).contains(&b)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CSIParserState {
     Parameters,
     Intermediates,
-    Finished(u8),
-    Invalid,
 }
 
+#[derive(Debug)]
+enum CSIParserError {
+    InvalidCSI,
+}
+
+struct CSIParseResult {
+    params: Vec<u8>,
+    intermediates: Vec<u8>,
+    func: u8,
+}
+
+#[derive(Debug)]
 struct CSIParser {
     params: Vec<u8>,
+    intermediates: Vec<u8>,
     state: CSIParserState,
 }
 
@@ -26,25 +41,28 @@ impl CSIParser {
         Self {
             state: CSIParserState::Parameters,
             params: vec![],
+            intermediates: vec![],
         }
     }
 
-    fn push(&mut self, b: u8) -> CSIParserState {
-        // TODO: matching and returning on self.state
-        // seems a bit odd, maybe find a nicer way?
-        match &mut self.state {
-            CSIParserState::Parameters => {
-                if is_csi_terminator(b) {
-                    self.state = CSIParserState::Finished(b);
-                } else if is_csi_param(b) {
-                    self.params.push(b);
-                }
+    fn push(&mut self, b: u8) -> Option<Result<CSIParseResult, CSIParserError>> {
+        if is_csi_param(b) {
+            if self.state == CSIParserState::Intermediates {
+                return Some(Err(CSIParserError::InvalidCSI));
             }
-            CSIParserState::Intermediates => {}
-            CSIParserState::Finished(_) => {}
-            CSIParserState::Invalid => {}
+            self.params.push(b);
+        } else if is_csi_intermediate(b) {
+            self.intermediates.push(b);
+            self.state = CSIParserState::Intermediates;
+        } else if is_csi_terminator(b) {
+            return Some(Ok(CSIParseResult {
+                params: self.params.clone(),
+                intermediates: self.intermediates.clone(),
+                func: b,
+            }));
         }
-        self.state
+
+        None
     }
 }
 
@@ -143,8 +161,8 @@ impl Ansi {
                     }
                 }
                 AnsiState::CSI(parser) => match parser.push(*b) {
-                    CSIParserState::Finished(d) => {
-                        match d {
+                    Some(Ok(d)) => {
+                        match d.func {
                             ansi_codes::SGR => {
                                 let params = parse_params(&parser.params);
                                 for param in params {
@@ -155,7 +173,10 @@ impl Ansi {
                         }
                         self.state = AnsiState::Empty;
                     }
-                    _ => {}
+                    Some(Err(e)) => {
+                        println!("Gotta do something with this error {e:?}");
+                    }
+                    _ => {} // CSI not finished, nothing to do
                 },
             }
         }
