@@ -52,8 +52,20 @@ fn main() {
     }
 }
 
+#[derive(Debug, Default)]
+struct CursorPos {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Debug, Default)]
+struct Cursor {
+    pos: CursorPos,
+}
+
 struct Turm {
     buf: Vec<AnsiOutput>,
+    cursor: Cursor,
     fd: OwnedFd,
     ansi: Ansi,
 }
@@ -68,6 +80,7 @@ impl Turm {
         });
         Self {
             fd,
+            cursor: Cursor::default(),
             buf: vec![],
             ansi: Ansi::new(),
         }
@@ -100,11 +113,23 @@ fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
 impl eframe::App for Turm {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let font_size = 24.0;
+        let line_height = font_size + 4.0;
+
         let mut buf = vec![0u8; 4096];
         let ret = nix::unistd::read(self.fd.as_raw_fd(), &mut buf);
 
         if let Ok(read_size) = ret {
-            let mut ansi_res = self.ansi.push(&buf[0..read_size]);
+            let inc = &buf[0..read_size];
+            let mut ansi_res = self.ansi.push(inc);
+            for c in inc {
+                match c {
+                    b'\n' => {
+                        self.cursor.pos.x = 0;
+                        self.cursor.pos.y += 1;
+                    }
+                    _ => self.cursor.pos.x += 1,
+                }
+            }
             self.buf.append(&mut ansi_res);
         };
 
@@ -121,18 +146,17 @@ impl eframe::App for Turm {
             let mut job = egui::text::LayoutJob::default();
 
             let mut color: Color32 = Color32::WHITE;
-            let mut chars = 0;
             for out in &self.buf {
                 match out {
                     AnsiOutput::Text(str) => {
                         let text = String::from_utf8_lossy(&str);
-                        chars += text.len();
                         job.append(
                             &text,
                             0.0,
                             egui::text::TextFormat {
                                 font_id: font_id.clone(),
                                 color,
+                                line_height: Some(line_height),
                                 ..Default::default()
                             },
                         );
@@ -150,9 +174,11 @@ impl eframe::App for Turm {
                 width = font.glyph_width(&font_id, 'i');
             });
 
-            // This is how to paint a cursor
             let painter = ui.painter();
-            let pos = egui::pos2(width * (chars) as f32 + res.rect.left(), 8.0);
+            let pos = egui::pos2(
+                (self.cursor.pos.x as f32) * width + res.rect.left(),
+                (self.cursor.pos.y as f32) * line_height + res.rect.top(),
+            );
             let size = egui::vec2(width, font_size);
             painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
         });
