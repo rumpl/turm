@@ -120,6 +120,8 @@ impl From<usize> for SelectGraphicRendition {
 #[derive(Debug)]
 pub enum AnsiOutput {
     Text(Vec<u8>),
+    Backspace,
+    Bell,
     SGR(SelectGraphicRendition),
 }
 
@@ -139,6 +141,17 @@ impl Ansi {
                 AnsiState::Empty => {
                     if *b == ansi_codes::ESC {
                         self.state = AnsiState::Escape;
+                        continue;
+                    }
+                    if *b == ansi_codes::BS {
+                        if !text_output.is_empty() {
+                            res.push(AnsiOutput::Text(std::mem::take(&mut text_output)));
+                        }
+                        res.push(AnsiOutput::Backspace);
+                        continue;
+                    }
+                    if *b == ansi_codes::BEL {
+                        res.push(AnsiOutput::Bell);
                         continue;
                     }
                     text_output.push(*b);
