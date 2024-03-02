@@ -4,7 +4,6 @@ use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Rect, TextStyle}
 
 use crate::{
     ansi::{Ansi, AnsiOutput, SelectGraphicRendition},
-    grid::Grid,
     turm::Turm,
 };
 
@@ -48,7 +47,6 @@ impl TurmGui {
 }
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        println!("{:?}", self.turm);
         let font_size = 24.0;
         let line_height = font_size + 4.0;
 
@@ -80,7 +78,6 @@ impl eframe::App for TurmGui {
                 match out {
                     AnsiOutput::Text(str) => {
                         let text = String::from_utf8_lossy(&str);
-                        println!("text: '{:?}'", text);
                         for c in str {
                             self.turm.input(*c);
                             match c {
