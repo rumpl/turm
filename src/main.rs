@@ -3,11 +3,15 @@ use std::{
     os::fd::{AsRawFd, OwnedFd},
 };
 
+use grid::Grid;
 use gui::TurmGui;
 
 mod ansi;
 mod ansi_codes;
+mod cell;
+mod grid;
 mod gui;
+mod row;
 mod turm;
 
 fn set_nonblock(fd: &OwnedFd) {
@@ -20,37 +24,41 @@ fn set_nonblock(fd: &OwnedFd) {
 }
 
 fn main() {
-    unsafe {
-        let result = nix::pty::forkpty(None, None).unwrap();
-        match result.fork_result {
-            nix::unistd::ForkResult::Parent { child } => {
-                std::thread::spawn(move || {
-                    let Ok(res) = nix::sys::wait::waitpid(child, None) else {
-                        std::process::exit(-1);
-                    };
-                    match res {
-                        nix::sys::wait::WaitStatus::Exited(_, code) => std::process::exit(code),
-                        _ => std::process::exit(-1),
-                    }
-                });
+    let mut g = Grid::new(10, 10);
+    g.scroll_up();
+    g.scroll_down();
+    g.resize(15, 15);
 
-                set_nonblock(&result.master);
-                let options = eframe::NativeOptions::default();
-                _ = eframe::run_native(
-                    "💩 Turm 💩",
-                    options,
-                    Box::new(|cc| Box::<TurmGui>::new(TurmGui::new(cc, result.master))),
-                );
-            }
-            nix::unistd::ForkResult::Child => {
-                let env = &[
-                    CStr::from_bytes_with_nul(b"TERM=turm\0").unwrap(),
-                    CStr::from_bytes_with_nul(b"TERMINFO=/Users/rumpl/hack/turm/res\0").unwrap(),
-                ];
-                let command = CStr::from_bytes_with_nul(b"/bin/sh\0").unwrap();
-                let args = [command];
-                let _ = nix::unistd::execve(command, &args, env);
-            }
+    let result = unsafe { nix::pty::forkpty(None, None).unwrap() };
+
+    match result.fork_result {
+        nix::unistd::ForkResult::Parent { child } => {
+            std::thread::spawn(move || {
+                let Ok(res) = nix::sys::wait::waitpid(child, None) else {
+                    std::process::exit(-1);
+                };
+                match res {
+                    nix::sys::wait::WaitStatus::Exited(_, code) => std::process::exit(code),
+                    _ => std::process::exit(-1),
+                }
+            });
+
+            set_nonblock(&result.master);
+            let options = eframe::NativeOptions::default();
+            _ = eframe::run_native(
+                "💩 Turm 💩",
+                options,
+                Box::new(|cc| Box::<TurmGui>::new(TurmGui::new(cc, result.master))),
+            );
+        }
+        nix::unistd::ForkResult::Child => {
+            let env = &[
+                CStr::from_bytes_with_nul(b"TERM=turm\0").unwrap(),
+                CStr::from_bytes_with_nul(b"TERMINFO=/Users/rumpl/hack/turm/res\0").unwrap(),
+            ];
+            let command = CStr::from_bytes_with_nul(b"/bin/sh\0").unwrap();
+            let args = [command];
+            let _ = nix::unistd::execve(command, &args, env);
         }
     }
 }

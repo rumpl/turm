@@ -2,22 +2,28 @@ use std::os::fd::{AsRawFd, OwnedFd};
 
 use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Rect, TextStyle};
 
-use crate::ansi::{Ansi, AnsiOutput, SelectGraphicRendition};
+use crate::{
+    ansi::{Ansi, AnsiOutput, SelectGraphicRendition},
+    grid::Grid,
+    turm::Turm,
+};
 
 #[derive(Debug, Default)]
-struct CursorPos {
+pub struct CursorPos {
     x: usize,
     y: usize,
 }
 
 #[derive(Debug, Default)]
-struct Cursor {
-    pos: CursorPos,
+pub struct Cursor {
+    pub pos: CursorPos,
 }
 
 pub struct TurmGui {
     buf: Vec<AnsiOutput>,
+    // TODO: remove the cursor from here and use the one in turm
     cursor: Cursor,
+    turm: Turm,
     fd: OwnedFd,
     ansi: Ansi,
 }
@@ -27,7 +33,7 @@ impl TurmGui {
         cc.egui_ctx.style_mut(|style| {
             style.override_text_style = Some(TextStyle::Monospace);
             for (_text_style, font_id) in style.text_styles.iter_mut() {
-                font_id.size = 24.0
+                font_id.size = 24.0;
             }
         });
         Self {
@@ -35,35 +41,14 @@ impl TurmGui {
             cursor: Cursor::default(),
             buf: vec![],
             ansi: Ansi::new(),
+            // TODO: calculate the right initial number of rows and columns
+            turm: Turm::new(80, 25),
         }
     }
 }
-
-fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
-    for event in &input.events {
-        let text = match event {
-            Event::Text(text) => Some(text.as_str()),
-            Event::Key {
-                key: Key::Backspace,
-                pressed: true,
-                ..
-            } => Some("\u{8}"),
-            Event::Key {
-                key: Key::Enter,
-                pressed: true,
-                ..
-            } => Some("\n"),
-            _ => None,
-        };
-
-        if let Some(text) = text {
-            let _ret = nix::unistd::write(fd.as_raw_fd(), text.as_bytes());
-        }
-    }
-}
-
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        println!("{:?}", self.turm);
         let font_size = 24.0;
         let line_height = font_size + 4.0;
 
@@ -73,15 +58,6 @@ impl eframe::App for TurmGui {
         if let Ok(read_size) = ret {
             let inc = &buf[0..read_size];
             let mut ansi_res = self.ansi.push(inc);
-            //for c in inc {
-            //   match c {
-            //      b'\n' => {
-            //         self.cursor.pos.x = 0;
-            //          self.cursor.pos.y += 1;
-            //     }
-            //    _ => self.cursor.pos.x += 1,
-            //}
-            //}
             self.buf.append(&mut ansi_res);
         };
 
@@ -106,6 +82,7 @@ impl eframe::App for TurmGui {
                         let text = String::from_utf8_lossy(&str);
                         println!("text: '{:?}'", text);
                         for c in str {
+                            self.turm.input(*c);
                             match c {
                                 b'\n' => {
                                     self.cursor.pos.x = 0;
@@ -130,6 +107,7 @@ impl eframe::App for TurmGui {
                         color = (*c).into();
                     }
                     AnsiOutput::Backspace => {
+                        self.turm.backspace();
                         if self.cursor.pos.x >= 1 {
                             self.cursor.pos.x -= 1;
                         }
@@ -154,12 +132,30 @@ impl eframe::App for TurmGui {
             );
             let size = egui::vec2(width, font_size);
             painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
-            //painter.rect_filled(
-            //    res.rect,
-            //    0.0,
-            //    Color32::from_rgba_unmultiplied(20, 100, 200, 50),
-            //);
         });
+    }
+}
+
+fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
+    for event in &input.events {
+        let text = match event {
+            Event::Text(text) => Some(text.as_str()),
+            Event::Key {
+                key: Key::Backspace,
+                pressed: true,
+                ..
+            } => Some("\u{8}"),
+            Event::Key {
+                key: Key::Enter,
+                pressed: true,
+                ..
+            } => Some("\n"),
+            _ => None,
+        };
+
+        if let Some(text) = text {
+            let _ret = nix::unistd::write(fd.as_raw_fd(), text.as_bytes());
+        }
     }
 }
 
