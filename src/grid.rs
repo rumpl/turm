@@ -47,6 +47,19 @@ impl Grid {
     pub fn resize(&mut self, rows: usize, columns: usize) {
         println!("Resizing to {rows}, {columns}");
     }
+
+    pub fn data(&self) -> String {
+        String::from_iter(self.rows.iter().flat_map(|row| {
+            let mut res = row
+                .clone()
+                .into_iter()
+                .map(|cell| cell.c)
+                .collect::<Vec<char>>();
+
+            res.push('\n');
+            res
+        }))
+    }
 }
 
 impl Index<usize> for Grid {
@@ -79,13 +92,30 @@ impl Iterator for Grid {
 
 impl Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "|")?;
+        for _ in &self.rows[0].inner {
+            write!(f, "_")?;
+        }
+        write!(f, "|\n")?;
+
         for row in &self.rows {
             write!(f, "|")?;
             for cell in &row.inner {
-                write!(f, "{}", cell.c)?;
+                if cell.c == '\t' {
+                    write!(f, " ")?;
+                } else {
+                    write!(f, "{}", cell.c)?;
+                }
             }
             write!(f, "|\n")?;
         }
+
+        write!(f, "|")?;
+        for _ in &self.rows[0].inner {
+            write!(f, "_")?;
+        }
+        write!(f, "|\n")?;
+
         Ok(())
     }
 }

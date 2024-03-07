@@ -41,7 +41,7 @@ impl TurmGui {
             buf: vec![],
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
-            turm: Turm::new(80, 25),
+            turm: Turm::new(40, 25),
         }
     }
 }
@@ -56,6 +56,13 @@ impl eframe::App for TurmGui {
         if let Ok(read_size) = ret {
             let inc = &buf[0..read_size];
             let mut ansi_res = self.ansi.push(inc);
+            for q in &ansi_res {
+                if let AnsiOutput::Text(str) = q {
+                    for c in str {
+                        self.turm.input(*c);
+                    }
+                }
+            }
             self.buf.append(&mut ansi_res);
         };
 
@@ -71,15 +78,27 @@ impl eframe::App for TurmGui {
 
             let mut job = egui::text::LayoutJob::default();
 
+            let mut color: Color32 = Color32::WHITE;
+            job.append(
+                &self.turm.grid.data(),
+                0.0,
+                egui::text::TextFormat {
+                    font_id: font_id.clone(),
+                    color,
+                    line_height: Some(line_height),
+                    ..Default::default()
+                },
+            );
+            let _res = ui.label(job);
+            return;
+
             self.cursor.pos.x = 0;
             self.cursor.pos.y = 0;
-            let mut color: Color32 = Color32::WHITE;
             for out in &self.buf {
                 match out {
                     AnsiOutput::Text(str) => {
                         let text = String::from_utf8_lossy(&str);
                         for c in str {
-                            self.turm.input(*c);
                             match c {
                                 b'\n' => {
                                     self.cursor.pos.x = 0;

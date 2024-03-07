@@ -24,11 +24,6 @@ fn set_nonblock(fd: &OwnedFd) {
 }
 
 fn main() {
-    let mut g = Grid::new(10, 10);
-    g.scroll_up();
-    g.scroll_down();
-    g.resize(15, 15);
-
     let result = unsafe { nix::pty::forkpty(None, None).unwrap() };
 
     match result.fork_result {
