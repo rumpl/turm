@@ -1,19 +1,19 @@
 use crate::grid::Grid;
 
 #[derive(Debug, Default)]
-struct CursorPos {
-    x: usize,
-    y: usize,
+pub struct CursorPos {
+    pub x: usize,
+    pub y: usize,
 }
 
 #[derive(Debug, Default)]
-struct Cursor {
-    pos: CursorPos,
+pub struct Cursor {
+    pub pos: CursorPos,
 }
 
 #[derive(Debug)]
 pub struct Turm {
-    cursor: Cursor,
+    pub cursor: Cursor,
     pub grid: Grid,
     lines: usize,
     columns: usize,

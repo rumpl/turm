@@ -3,11 +3,10 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use crate::{gui::Cursor, row::Row};
+use crate::row::Row;
 
 #[derive(Debug)]
 pub struct Grid {
-    pub cursor: Cursor,
     columns: usize,
     lines: usize,
     rows: Vec<Row>,
@@ -20,7 +19,6 @@ impl Grid {
         rows.resize(lines, Row::new(columns));
 
         Self {
-            cursor: Cursor::default(),
             columns,
             lines,
             rows,
@@ -50,11 +48,7 @@ impl Grid {
 
     pub fn data(&self) -> String {
         String::from_iter(self.rows.iter().flat_map(|row| {
-            let mut res = row
-                .clone()
-                .into_iter()
-                .map(|cell| cell.c)
-                .collect::<Vec<char>>();
+            let mut res = row.clone().map(|cell| cell.c).collect::<Vec<char>>();
 
             res.push('\n');
             res
@@ -96,7 +90,7 @@ impl Display for Grid {
         for _ in &self.rows[0].inner {
             write!(f, "_")?;
         }
-        write!(f, "|\n")?;
+        writeln!(f, "|")?;
 
         for row in &self.rows {
             write!(f, "|")?;
@@ -107,14 +101,14 @@ impl Display for Grid {
                     write!(f, "{}", cell.c)?;
                 }
             }
-            write!(f, "|\n")?;
+            writeln!(f, "|")?;
         }
 
         write!(f, "|")?;
         for _ in &self.rows[0].inner {
             write!(f, "_")?;
         }
-        write!(f, "|\n")?;
+        writeln!(f, "|")?;
 
         Ok(())
     }

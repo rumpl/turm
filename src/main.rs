@@ -3,7 +3,6 @@ use std::{
     os::fd::{AsRawFd, OwnedFd},
 };
 
-use grid::Grid;
 use gui::TurmGui;
 
 mod ansi;

@@ -7,21 +7,8 @@ use crate::{
     turm::Turm,
 };
 
-#[derive(Debug, Default)]
-pub struct CursorPos {
-    x: usize,
-    y: usize,
-}
-
-#[derive(Debug, Default)]
-pub struct Cursor {
-    pub pos: CursorPos,
-}
-
 pub struct TurmGui {
     buf: Vec<AnsiOutput>,
-    // TODO: remove the cursor from here and use the one in turm
-    cursor: Cursor,
     turm: Turm,
     fd: OwnedFd,
     ansi: Ansi,
@@ -37,7 +24,6 @@ impl TurmGui {
         });
         Self {
             fd,
-            cursor: Cursor::default(),
             buf: vec![],
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
@@ -78,7 +64,7 @@ impl eframe::App for TurmGui {
 
             let mut job = egui::text::LayoutJob::default();
 
-            let mut color: Color32 = Color32::WHITE;
+            let color: Color32 = Color32::WHITE;
             job.append(
                 &self.turm.grid.data(),
                 0.0,
@@ -89,51 +75,6 @@ impl eframe::App for TurmGui {
                     ..Default::default()
                 },
             );
-            let _res = ui.label(job);
-            return;
-
-            self.cursor.pos.x = 0;
-            self.cursor.pos.y = 0;
-            for out in &self.buf {
-                match out {
-                    AnsiOutput::Text(str) => {
-                        let text = String::from_utf8_lossy(&str);
-                        for c in str {
-                            match c {
-                                b'\n' => {
-                                    self.cursor.pos.x = 0;
-                                    self.cursor.pos.y += 1;
-                                }
-                                _ => self.cursor.pos.x += 1,
-                            }
-                        }
-
-                        job.append(
-                            &text,
-                            0.0,
-                            egui::text::TextFormat {
-                                font_id: font_id.clone(),
-                                color,
-                                line_height: Some(line_height),
-                                ..Default::default()
-                            },
-                        );
-                    }
-                    AnsiOutput::SGR(c) => {
-                        color = (*c).into();
-                    }
-                    AnsiOutput::Backspace => {
-                        self.turm.backspace();
-                        if self.cursor.pos.x >= 1 {
-                            self.cursor.pos.x -= 1;
-                        }
-                    }
-                    AnsiOutput::Bell => {
-                        println!("ding");
-                    }
-                }
-            }
-
             let res = ui.label(job);
 
             let mut width = 0.0;
@@ -143,11 +84,69 @@ impl eframe::App for TurmGui {
 
             let painter = ui.painter();
             let pos = egui::pos2(
-                (self.cursor.pos.x as f32) * width + res.rect.left(),
-                (self.cursor.pos.y as f32) * line_height + res.rect.top(),
+                (self.turm.cursor.pos.x as f32) * width + res.rect.left(),
+                (self.turm.cursor.pos.y as f32) * line_height + res.rect.top(),
             );
             let size = egui::vec2(width, font_size);
             painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
+            /*
+                        self.cursor.pos.x = 0;
+                        self.cursor.pos.y = 0;
+                        for out in &self.buf {
+                            match out {
+                                AnsiOutput::Text(str) => {
+                                    let text = String::from_utf8_lossy(str);
+                                    for c in str {
+                                        match c {
+                                            b'\n' => {
+                                                self.cursor.pos.x = 0;
+                                                self.cursor.pos.y += 1;
+                                            }
+                                            _ => self.cursor.pos.x += 1,
+                                        }
+                                    }
+
+                                    job.append(
+                                        &text,
+                                        0.0,
+                                        egui::text::TextFormat {
+                                            font_id: font_id.clone(),
+                                            color,
+                                            line_height: Some(line_height),
+                                            ..Default::default()
+                                        },
+                                    );
+                                }
+                                AnsiOutput::SGR(c) => {
+                                    color = (*c).into();
+                                }
+                                AnsiOutput::Backspace => {
+                                    self.turm.backspace();
+                                    if self.cursor.pos.x >= 1 {
+                                        self.cursor.pos.x -= 1;
+                                    }
+                                }
+                                AnsiOutput::Bell => {
+                                    println!("ding");
+                                }
+                            }
+                        }
+
+                        let res = ui.label(job);
+
+                        let mut width = 0.0;
+                        ctx.fonts(|font| {
+                            width = font.glyph_width(&font_id, 'i');
+                        });
+
+                        let painter = ui.painter();
+                        let pos = egui::pos2(
+                            (self.cursor.pos.x as f32) * width + res.rect.left(),
+                            (self.cursor.pos.y as f32) * line_height + res.rect.top(),
+                        );
+                        let size = egui::vec2(width, font_size);
+                        painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
+            */
         });
     }
 }
