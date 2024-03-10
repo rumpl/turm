@@ -1,4 +1,4 @@
-use crate::grid::Grid;
+use crate::{ansi::SelectGraphicRendition, grid::Grid};
 
 #[derive(Debug, Default)]
 pub struct CursorPos {
@@ -14,6 +14,7 @@ pub struct Cursor {
 #[derive(Debug)]
 pub struct Turm {
     pub cursor: Cursor,
+    current_color: SelectGraphicRendition,
     pub grid: Grid,
     lines: usize,
     columns: usize,
@@ -24,6 +25,7 @@ impl Turm {
         Self {
             cursor: Cursor::default(),
             grid: Grid::new(columns, lines),
+            current_color: SelectGraphicRendition::ForegroundWhite,
             lines,
             columns,
         }
@@ -38,6 +40,7 @@ impl Turm {
         } else {
             // TODO: handle scroll here
             self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;
+            self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = self.current_color;
             self.cursor.pos.x += 1;
             if self.cursor.pos.x == self.columns {
                 self.cursor.pos.x = 0;
@@ -50,5 +53,10 @@ impl Turm {
         if self.cursor.pos.x >= 1 {
             self.cursor.pos.x -= 1;
         }
+    }
+
+    pub fn color(&mut self, c: SelectGraphicRendition) {
+        self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = c;
+        self.current_color = c;
     }
 }

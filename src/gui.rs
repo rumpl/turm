@@ -50,6 +50,7 @@ impl eframe::App for TurmGui {
                         }
                     }
                     AnsiOutput::Backspace => self.turm.backspace(),
+                    AnsiOutput::Sgr(c) => self.turm.color(*c),
                     _ => println!("ugh"),
                 }
             }
@@ -66,19 +67,20 @@ impl eframe::App for TurmGui {
                 family: FontFamily::Monospace,
             };
 
-            let mut job = egui::text::LayoutJob::default();
-
             let color: Color32 = Color32::WHITE;
-            job.append(
-                &self.turm.grid.data(),
-                0.0,
-                egui::text::TextFormat {
-                    font_id: font_id.clone(),
-                    color,
-                    line_height: Some(line_height),
-                    ..Default::default()
-                },
-            );
+            let mut job = egui::text::LayoutJob::default();
+            for section in self.turm.grid.sections() {
+                job.append(
+                    &section.text,
+                    0.0,
+                    egui::text::TextFormat {
+                        font_id: font_id.clone(),
+                        color: section.fg.into(),
+                        line_height: Some(line_height),
+                        ..Default::default()
+                    },
+                );
+            }
             let res = ui.label(job);
 
             let mut width = 0.0;

@@ -3,7 +3,9 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use crate::row::Row;
+use egui::accesskit::TextSelection;
+
+use crate::{ansi::SelectGraphicRendition, row::Row};
 
 #[derive(Debug)]
 pub struct Grid {
@@ -54,6 +56,45 @@ impl Grid {
             res
         }))
     }
+
+    pub fn sections(&self) -> Vec<TextSection> {
+        let mut res = vec![];
+
+        let mut current_style = self.rows[0][0].fg;
+        let mut text = String::new();
+
+        for row in &self.rows {
+            for col in &row.inner {
+                if col.fg != current_style {
+                    let ts = TextSection {
+                        text: text.clone(),
+                        fg: current_style.clone(),
+                    };
+                    current_style = col.fg;
+                    text = "".to_string();
+
+                    res.push(ts);
+                }
+                text.push_str(&String::from(col.c));
+            }
+            text.push('\n');
+        }
+
+        if !text.is_empty() {
+            let ts = TextSection {
+                text: text.clone(),
+                fg: current_style.clone(),
+            };
+            res.push(ts);
+        }
+
+        res
+    }
+}
+
+pub struct TextSection {
+    pub text: String,
+    pub fg: SelectGraphicRendition,
 }
 
 impl Index<usize> for Grid {
