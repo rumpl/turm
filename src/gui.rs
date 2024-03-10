@@ -43,10 +43,14 @@ impl eframe::App for TurmGui {
             let inc = &buf[0..read_size];
             let mut ansi_res = self.ansi.push(inc);
             for q in &ansi_res {
-                if let AnsiOutput::Text(str) = q {
-                    for c in str {
-                        self.turm.input(*c);
+                match q {
+                    AnsiOutput::Text(str) => {
+                        for c in str {
+                            self.turm.input(*c);
+                        }
                     }
+                    AnsiOutput::Backspace => self.turm.backspace(),
+                    _ => println!("ugh"),
                 }
             }
             self.buf.append(&mut ansi_res);
