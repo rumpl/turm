@@ -171,6 +171,7 @@ impl Ansi {
                 }
                 AnsiState::Csi(parser) => match parser.push(*b) {
                     Some(Ok(d)) => {
+                        #[allow(clippy::single_match)]
                         match d.func {
                             ansi_codes::SGR => {
                                 let params = parse_params(&d.params);

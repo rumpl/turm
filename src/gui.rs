@@ -67,7 +67,6 @@ impl eframe::App for TurmGui {
                 family: FontFamily::Monospace,
             };
 
-            let color: Color32 = Color32::WHITE;
             let mut job = egui::text::LayoutJob::default();
             for section in self.turm.grid.sections() {
                 job.append(

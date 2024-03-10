@@ -3,14 +3,10 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use egui::accesskit::TextSelection;
-
 use crate::{ansi::SelectGraphicRendition, row::Row};
 
 #[derive(Debug)]
 pub struct Grid {
-    columns: usize,
-    lines: usize,
     rows: Vec<Row>,
     index: usize,
 }
@@ -20,12 +16,7 @@ impl Grid {
         let mut rows = Vec::with_capacity(lines);
         rows.resize(lines, Row::new(columns));
 
-        Self {
-            columns,
-            lines,
-            rows,
-            index: 0,
-        }
+        Self { rows, index: 0 }
     }
 
     /// Scrolls the grid up by one
@@ -35,26 +26,6 @@ impl Grid {
         }
         let len = self.rows.len();
         self.rows[len - 1].reset();
-    }
-
-    pub fn scroll_down(&mut self) {
-        for i in 1..self.rows.len() {
-            self.rows.swap(i, i - 1);
-        }
-        self.rows[0].reset();
-    }
-
-    pub fn resize(&mut self, rows: usize, columns: usize) {
-        println!("Resizing to {rows}, {columns}");
-    }
-
-    pub fn data(&self) -> String {
-        String::from_iter(self.rows.iter().flat_map(|row| {
-            let mut res = row.clone().map(|cell| cell.c).collect::<Vec<char>>();
-
-            res.push('\n');
-            res
-        }))
     }
 
     pub fn sections(&self) -> Vec<TextSection> {
@@ -68,7 +39,7 @@ impl Grid {
                 if col.fg != current_style {
                     let ts = TextSection {
                         text: text.clone(),
-                        fg: current_style.clone(),
+                        fg: current_style,
                     };
                     current_style = col.fg;
                     text = "".to_string();
@@ -83,7 +54,7 @@ impl Grid {
         if !text.is_empty() {
             let ts = TextSection {
                 text: text.clone(),
-                fg: current_style.clone(),
+                fg: current_style,
             };
             res.push(ts);
         }
@@ -166,14 +137,5 @@ mod test {
         assert!(g[0][0].c == ' ');
         g.scroll_up();
         assert!(g[0][0].c == 'a');
-    }
-
-    #[test]
-    fn test_scoll_down() {
-        let mut g = Grid::new(2, 2);
-        g[0][0].c = 'a';
-        assert!(g[1][0].c == ' ');
-        g.scroll_down();
-        assert!(g[1][0].c == 'a');
     }
 }
