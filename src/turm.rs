@@ -38,14 +38,19 @@ impl Turm {
         } else if c == b'\r' {
             self.cursor.pos.x = 0;
         } else {
-            // TODO: handle scroll here
             self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;
             self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = self.current_color;
             self.cursor.pos.x += 1;
-            if self.cursor.pos.x == self.columns {
-                self.cursor.pos.x = 0;
-                self.cursor.pos.y += 1;
-            }
+        }
+
+        if self.cursor.pos.x == self.columns {
+            self.cursor.pos.x = 0;
+            self.cursor.pos.y += 1;
+        }
+        if self.cursor.pos.y == self.lines {
+            self.cursor.pos.y = self.lines - 1;
+            self.cursor.pos.x += 0;
+            self.grid.scroll_up();
         }
     }
 
