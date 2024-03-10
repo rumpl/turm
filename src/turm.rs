@@ -44,7 +44,8 @@ impl Turm {
         }
 
         if self.cursor.pos.x == self.columns {
-            self.cursor.pos.x = self.columns - 1;
+            self.cursor.pos.x = 0;
+            self.cursor.pos.y += 1;
         }
         if self.cursor.pos.y == self.lines {
             self.cursor.pos.y = self.lines - 1;

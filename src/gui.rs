@@ -1,11 +1,17 @@
 use std::os::fd::{AsRawFd, OwnedFd};
 
-use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Rect, TextStyle};
-
 use crate::{
     ansi::{Ansi, AnsiOutput, SelectGraphicRendition},
     turm::Turm,
 };
+use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Rect, TextStyle};
+use nix::ioctl_write_ptr_bad;
+
+ioctl_write_ptr_bad!(
+    set_window_size_ioctl,
+    nix::libc::TIOCSWINSZ,
+    nix::pty::Winsize
+);
 
 pub struct TurmGui {
     buf: Vec<AnsiOutput>,
@@ -22,6 +28,15 @@ impl TurmGui {
                 font_id.size = 24.0;
             }
         });
+        let ws = nix::pty::Winsize {
+            ws_col: 40,
+            ws_row: 25,
+            ws_xpixel: 0,
+            ws_ypixel: 0,
+        };
+        unsafe {
+            let _ = set_window_size_ioctl(fd.as_raw_fd(), &ws);
+        }
         Self {
             fd,
             buf: vec![],
