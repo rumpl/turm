@@ -1,11 +1,13 @@
-use std::ops::{Index, IndexMut};
+use std::{
+    ops::{Index, IndexMut},
+    slice::Iter,
+};
 
 use crate::cell::Cell;
 
 #[derive(Debug, Clone)]
 pub struct Row {
     pub inner: Vec<Cell>,
-    index: usize,
 }
 
 impl Row {
@@ -14,7 +16,7 @@ impl Row {
 
         inner.resize(columns, Cell::new());
 
-        Self { inner, index: 0 }
+        Self { inner }
     }
 
     pub fn reset(&mut self) {
@@ -38,16 +40,11 @@ impl IndexMut<usize> for Row {
     }
 }
 
-impl Iterator for Row {
-    type Item = Cell;
+impl<'a> IntoIterator for &'a Row {
+    type Item = &'a Cell;
+    type IntoIter = Iter<'a, Cell>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.inner.len() {
-            let cell = self.inner[self.index];
-            self.index += 1;
-            Some(cell)
-        } else {
-            None
-        }
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.iter()
     }
 }
