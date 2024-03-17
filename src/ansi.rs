@@ -65,14 +65,14 @@ impl CSIParser {
 enum AnsiState {
     Empty,
     Escape,
-    CSI(CSIParser),
+    Csi(CSIParser),
 }
 
 pub struct Ansi {
     state: AnsiState,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SelectGraphicRendition {
     Reset,
     ForegroundBlack,
@@ -122,7 +122,7 @@ pub enum AnsiOutput {
     Text(Vec<u8>),
     Backspace,
     Bell,
-    SGR(SelectGraphicRendition),
+    Sgr(SelectGraphicRendition),
 }
 
 impl Ansi {
@@ -162,20 +162,21 @@ impl Ansi {
                     }
                     match *b {
                         ansi_codes::ESC_START => {
-                            self.state = AnsiState::CSI(CSIParser::new());
+                            self.state = AnsiState::Csi(CSIParser::new());
                         }
                         _ => {
                             println!("unknown ansi {b}");
                         }
                     }
                 }
-                AnsiState::CSI(parser) => match parser.push(*b) {
+                AnsiState::Csi(parser) => match parser.push(*b) {
                     Some(Ok(d)) => {
+                        #[allow(clippy::single_match)]
                         match d.func {
                             ansi_codes::SGR => {
                                 let params = parse_params(&d.params);
                                 for param in params {
-                                    res.push(AnsiOutput::SGR(param.into()));
+                                    res.push(AnsiOutput::Sgr(param.into()));
                                 }
                             }
                             _ => {}
