@@ -29,8 +29,8 @@ impl TurmGui {
             }
         });
         let ws = nix::pty::Winsize {
-            ws_col: 40,
-            ws_row: 25,
+            ws_col: 30,
+            ws_row: 10,
             ws_xpixel: 0,
             ws_ypixel: 0,
         };
@@ -42,7 +42,7 @@ impl TurmGui {
             buf: vec![],
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
-            turm: Turm::new(40, 25),
+            turm: Turm::new(30, 10),
         }
     }
 }
@@ -66,7 +66,7 @@ impl eframe::App for TurmGui {
                     }
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),
-                    _ => println!("ugh"),
+                    AnsiOutput::Bell => println!("DING DONG"),
                 }
             }
             self.buf.append(&mut ansi_res);
@@ -109,64 +109,6 @@ impl eframe::App for TurmGui {
             );
             let size = egui::vec2(width, font_size);
             painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
-            /*
-                        self.cursor.pos.x = 0;
-                        self.cursor.pos.y = 0;
-                        for out in &self.buf {
-                            match out {
-                                AnsiOutput::Text(str) => {
-                                    let text = String::from_utf8_lossy(str);
-                                    for c in str {
-                                        match c {
-                                            b'\n' => {
-                                                self.cursor.pos.x = 0;
-                                                self.cursor.pos.y += 1;
-                                            }
-                                            _ => self.cursor.pos.x += 1,
-                                        }
-                                    }
-
-                                    job.append(
-                                        &text,
-                                        0.0,
-                                        egui::text::TextFormat {
-                                            font_id: font_id.clone(),
-                                            color,
-                                            line_height: Some(line_height),
-                                            ..Default::default()
-                                        },
-                                    );
-                                }
-                                AnsiOutput::SGR(c) => {
-                                    color = (*c).into();
-                                }
-                                AnsiOutput::Backspace => {
-                                    self.turm.backspace();
-                                    if self.cursor.pos.x >= 1 {
-                                        self.cursor.pos.x -= 1;
-                                    }
-                                }
-                                AnsiOutput::Bell => {
-                                    println!("ding");
-                                }
-                            }
-                        }
-
-                        let res = ui.label(job);
-
-                        let mut width = 0.0;
-                        ctx.fonts(|font| {
-                            width = font.glyph_width(&font_id, 'i');
-                        });
-
-                        let painter = ui.painter();
-                        let pos = egui::pos2(
-                            (self.cursor.pos.x as f32) * width + res.rect.left(),
-                            (self.cursor.pos.y as f32) * line_height + res.rect.top(),
-                        );
-                        let size = egui::vec2(width, font_size);
-                        painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
-            */
         });
     }
 }

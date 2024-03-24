@@ -14,7 +14,7 @@ impl Row {
     pub fn new(columns: usize) -> Self {
         let mut inner = Vec::with_capacity(columns);
 
-        inner.resize(columns, Cell::new());
+        inner.resize(columns, Cell::default());
 
         Self { inner }
     }
