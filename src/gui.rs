@@ -127,6 +127,16 @@ fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
                 pressed: true,
                 ..
             } => Some("\n"),
+            Event::Key {
+                key: Key::ArrowUp,
+                pressed: true,
+                ..
+            } => Some("\x1bOA"),
+            Event::Key {
+                key: Key::ArrowDown,
+                pressed: true,
+                ..
+            } => Some("\x1bOB"),
             _ => None,
         };
 

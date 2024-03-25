@@ -48,7 +48,7 @@ fn main() {
         nix::unistd::ForkResult::Child => {
             let env = &[
                 CStr::from_bytes_with_nul(b"TERM=turm\0").unwrap(),
-                CStr::from_bytes_with_nul(b"TERMINFO=/Users/rumpl/hack/turm/res\0").unwrap(),
+                CStr::from_bytes_with_nul(b"TERMINFO=/home/rumpl/dev/turm/res\0").unwrap(),
             ];
             let command = CStr::from_bytes_with_nul(b"/bin/sh\0").unwrap();
             let args = [command];
