@@ -11,7 +11,7 @@ pub struct Cell {
 impl Cell {
     pub fn new() -> Self {
         Self {
-            c: ' ',
+            c: '.',
             fg: SelectGraphicRendition::ForegroundWhite,
             bg: SelectGraphicRendition::Reset, // TODO: add background colors
             wrap: false,

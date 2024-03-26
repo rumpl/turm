@@ -30,7 +30,7 @@ impl TurmGui {
         });
         let ws = nix::pty::Winsize {
             ws_col: 30,
-            ws_row: 10,
+            ws_row: 20,
             ws_xpixel: 0,
             ws_ypixel: 0,
         };
@@ -42,7 +42,7 @@ impl TurmGui {
             buf: vec![],
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
-            turm: Turm::new(30, 10),
+            turm: Turm::new(30, 20),
         }
     }
 }
@@ -137,6 +137,11 @@ fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
                 pressed: true,
                 ..
             } => Some("\x1bOB"),
+            Event::Key {
+                key: Key::Tab,
+                pressed: true,
+                ..
+            } => Some("\t"),
             _ => None,
         };
 
