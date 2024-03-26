@@ -1,4 +1,5 @@
 use std::{
+    env,
     ffi::CStr,
     os::fd::{AsRawFd, OwnedFd},
 };
@@ -46,13 +47,11 @@ fn main() {
             );
         }
         nix::unistd::ForkResult::Child => {
-            let env = &[
-                CStr::from_bytes_with_nul(b"TERM=turm\0").unwrap(),
-                CStr::from_bytes_with_nul(b"TERMINFO=/home/rumpl/dev/turm/res\0").unwrap(),
-            ];
+            std::env::set_var("TERM", "turm");
+            std::env::set_var("TERMINFO", "/home/rumpl/dev/turm/res");
             let command = CStr::from_bytes_with_nul(b"/bin/sh\0").unwrap();
             let args = [command];
-            let _ = nix::unistd::execve(command, &args, env);
+            let _ = nix::unistd::execvp(command, &args);
         }
     }
 }
