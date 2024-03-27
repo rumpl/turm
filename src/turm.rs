@@ -50,7 +50,7 @@ impl Turm {
         if self.cursor.pos.y == self.lines {
             self.cursor.pos.y = self.lines - 1;
             self.cursor.pos.x = 0;
-            self.grid.scroll_up();
+            self.scroll_up();
         }
     }
 
@@ -94,5 +94,9 @@ impl Turm {
 
     pub fn scroll_up(&mut self) {
         self.grid.scroll_up();
+    }
+
+    pub fn scroll_down(&mut self) {
+        self.grid.scroll_down();
     }
 }

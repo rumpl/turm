@@ -140,7 +140,7 @@ pub enum AnsiOutput {
     Backspace,
     ClearToEndOfLine(ClearMode),
     ClearToEOS,
-    ScrollUp,
+    ScrollDown,
     MoveCursor(usize, usize),
     Bell,
     Sgr(SelectGraphicRendition),
@@ -186,7 +186,7 @@ impl Ansi {
                             self.state = AnsiState::Csi(CSIParser::new());
                         }
                         ansi_codes::SCROLL_REVERSE => {
-                            res.push(AnsiOutput::ScrollUp);
+                            res.push(AnsiOutput::ScrollDown);
                         }
                         _ => {
                             println!("unknown ansi {b} {:#02x}", b);

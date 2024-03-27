@@ -8,6 +8,7 @@ use crate::{ansi::SelectGraphicRendition, row::Row};
 #[derive(Debug)]
 pub struct Grid {
     rows: Vec<Row>,
+    scrollback: Vec<Row>,
     index: usize,
 }
 
@@ -16,7 +17,11 @@ impl Grid {
         let mut rows = Vec::with_capacity(lines);
         rows.resize(lines, Row::new(columns));
 
-        Self { rows, index: 0 }
+        Self {
+            rows,
+            index: 0,
+            scrollback: vec![],
+        }
     }
 
     /// Scrolls the grid up by one
@@ -25,7 +30,13 @@ impl Grid {
             self.rows.swap(i - 1, i);
         }
         let len = self.rows.len();
+        self.scrollback.push(self.rows[len - 1].clone());
         self.rows[len - 1].reset();
+    }
+
+    /// Scrolls the grid down by one
+    pub fn scroll_down(&mut self) {
+        // TODO implement scroll down, "less" needs it
     }
 
     pub fn sections(&self) -> Vec<TextSection> {
