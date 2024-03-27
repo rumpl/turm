@@ -140,6 +140,7 @@ pub enum AnsiOutput {
     Backspace,
     ClearToEndOfLine(ClearMode),
     ClearToEOS,
+    ScrollUp,
     MoveCursor(usize, usize),
     Bell,
     Sgr(SelectGraphicRendition),
@@ -184,6 +185,9 @@ impl Ansi {
                         ansi_codes::ESC_START => {
                             self.state = AnsiState::Csi(CSIParser::new());
                         }
+                        ansi_codes::SCROLL_REVERSE => {
+                            res.push(AnsiOutput::ScrollUp);
+                        }
                         _ => {
                             println!("unknown ansi {b} {:#02x}", b);
                         }
@@ -207,8 +211,8 @@ impl Ansi {
                             ansi_codes::CLEAR_EOS => res.push(AnsiOutput::ClearToEOS),
                             ansi_codes::HOME => {
                                 let params = parse_params(&d.params);
-                                let x = if params.is_empty() { 0 } else { params[0] };
-                                let y = if params.len() <= 1 { 0 } else { params[1] };
+                                let x = if params.is_empty() { 1 } else { params[0] };
+                                let y = if params.len() <= 1 { 1 } else { params[1] };
                                 res.push(AnsiOutput::MoveCursor(x - 1, y - 1));
                             }
                             _ => {
@@ -234,6 +238,9 @@ impl Ansi {
 }
 
 fn parse_params(params: &[u8]) -> Vec<usize> {
+    if params.is_empty() {
+        return vec![];
+    }
     params
         .split(|v| *v == b';')
         .map(parse_usize_param)

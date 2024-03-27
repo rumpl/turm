@@ -91,4 +91,8 @@ impl Turm {
         self.cursor.pos.x = x;
         self.cursor.pos.y = y;
     }
+
+    pub fn scroll_up(&mut self) {
+        self.grid.scroll_up();
+    }
 }

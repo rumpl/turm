@@ -71,6 +71,7 @@ impl eframe::App for TurmGui {
                     AnsiOutput::ClearToEndOfLine(_mode) => self.turm.clear_to_end_of_line(),
                     AnsiOutput::ClearToEOS => self.turm.clear_to_eos(),
                     AnsiOutput::MoveCursor(x, y) => self.turm.home(*x, *y),
+                    AnsiOutput::ScrollUp => self.turm.scroll_up(),
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),
                     AnsiOutput::Bell => println!("DING DONG"),
