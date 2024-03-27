@@ -5,3 +5,4 @@ pub const ESC_START: u8 = b'[';
 
 pub const SGR: u8 = b'm';
 pub const CLEAR_LINE: u8 = b'K';
+pub const CLEAR_EOS: u8 = b'J';

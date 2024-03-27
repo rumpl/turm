@@ -70,4 +70,20 @@ impl Turm {
             self.grid[self.cursor.pos.y][i].c = ' ';
         }
     }
+
+    pub fn clear_to_eos(&mut self) {
+        let mut i = self.cursor.pos.x;
+        let mut j = self.cursor.pos.y;
+        loop {
+            self.grid[j][i].c = ' ';
+            i += 1;
+            if i == self.columns {
+                i = 0;
+                j += 1;
+            }
+            if j == self.lines {
+                break;
+            }
+        }
+    }
 }

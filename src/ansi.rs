@@ -139,6 +139,7 @@ pub enum AnsiOutput {
     Text(Vec<u8>),
     Backspace,
     ClearToEndOfLine(ClearMode),
+    ClearToEOS,
     Bell,
     Sgr(SelectGraphicRendition),
 }
@@ -199,9 +200,10 @@ impl Ansi {
                             }
                             ansi_codes::CLEAR_LINE => {
                                 let params = parse_params(&d.params);
-                                let mode: usize = if params.len() == 0 { 0 } else { params[0] };
+                                let mode: usize = if params.is_empty() { 0 } else { params[0] };
                                 res.push(AnsiOutput::ClearToEndOfLine(mode.into()));
                             }
+                            ansi_codes::CLEAR_EOS => res.push(AnsiOutput::ClearToEOS),
                             _ => {
                                 println!("unknown func {} {}", d.func, d.func as char);
                             }
