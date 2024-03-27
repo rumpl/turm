@@ -140,7 +140,7 @@ pub enum AnsiOutput {
     Backspace,
     ClearToEndOfLine(ClearMode),
     ClearToEOS,
-    Home,
+    MoveCursor(usize, usize),
     Bell,
     Sgr(SelectGraphicRendition),
 }
@@ -205,7 +205,12 @@ impl Ansi {
                                 res.push(AnsiOutput::ClearToEndOfLine(mode.into()));
                             }
                             ansi_codes::CLEAR_EOS => res.push(AnsiOutput::ClearToEOS),
-                            ansi_codes::HOME => res.push(AnsiOutput::Home),
+                            ansi_codes::HOME => {
+                                let params = parse_params(&d.params);
+                                let x = if params.is_empty() { 0 } else { params[0] };
+                                let y = if params.len() <= 1 { 0 } else { params[1] };
+                                res.push(AnsiOutput::MoveCursor(x - 1, y - 1));
+                            }
                             _ => {
                                 println!("unknown func {} {}", d.func, d.func as char);
                             }

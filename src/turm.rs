@@ -87,8 +87,8 @@ impl Turm {
         }
     }
 
-    pub fn home(&mut self) {
-        self.cursor.pos.x = 0;
-        self.cursor.pos.y = 0;
+    pub fn home(&mut self, x: usize, y: usize) {
+        self.cursor.pos.x = x;
+        self.cursor.pos.y = y;
     }
 }

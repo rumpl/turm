@@ -29,8 +29,8 @@ impl TurmGui {
             }
         });
 
-        let cols: usize = 30;
-        let rows: usize = 10;
+        let cols: usize = 40;
+        let rows: usize = 20;
 
         let ws = nix::pty::Winsize {
             ws_col: cols as u16,
@@ -70,7 +70,7 @@ impl eframe::App for TurmGui {
                     }
                     AnsiOutput::ClearToEndOfLine(_mode) => self.turm.clear_to_end_of_line(),
                     AnsiOutput::ClearToEOS => self.turm.clear_to_eos(),
-                    AnsiOutput::Home => self.turm.home(),
+                    AnsiOutput::MoveCursor(x, y) => self.turm.home(*x, *y),
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),
                     AnsiOutput::Bell => println!("DING DONG"),
