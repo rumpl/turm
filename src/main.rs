@@ -1,5 +1,4 @@
 use std::{
-    env,
     ffi::CStr,
     os::fd::{AsRawFd, OwnedFd},
 };

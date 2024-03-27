@@ -64,4 +64,10 @@ impl Turm {
         self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = c;
         self.current_color = c;
     }
+
+    pub fn clear_to_end_of_line(&mut self) {
+        for i in self.cursor.pos.x..self.columns {
+            self.grid[self.cursor.pos.y][i].c = ' ';
+        }
+    }
 }

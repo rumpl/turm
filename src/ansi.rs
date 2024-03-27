@@ -118,9 +118,27 @@ impl From<usize> for SelectGraphicRendition {
 }
 
 #[derive(Debug)]
+pub enum ClearMode {
+    ToEnd,
+    ToBeginning,
+    Both,
+}
+
+impl From<usize> for ClearMode {
+    fn from(value: usize) -> Self {
+        match value {
+            0 => Self::ToEnd,
+            1 => Self::ToBeginning,
+            _ => Self::Both,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum AnsiOutput {
     Text(Vec<u8>),
     Backspace,
+    ClearToEndOfLine(ClearMode),
     Bell,
     Sgr(SelectGraphicRendition),
 }
@@ -165,7 +183,7 @@ impl Ansi {
                             self.state = AnsiState::Csi(CSIParser::new());
                         }
                         _ => {
-                            println!("unknown ansi {b}");
+                            println!("unknown ansi {b} {:#02x}", b);
                         }
                     }
                 }
@@ -179,7 +197,14 @@ impl Ansi {
                                     res.push(AnsiOutput::Sgr(param.into()));
                                 }
                             }
-                            _ => {}
+                            ansi_codes::CLEAR_LINE => {
+                                let params = parse_params(&d.params);
+                                let mode: usize = if params.len() == 0 { 0 } else { params[0] };
+                                res.push(AnsiOutput::ClearToEndOfLine(mode.into()));
+                            }
+                            _ => {
+                                println!("unknown func {} {}", d.func, d.func as char);
+                            }
                         }
                         self.state = AnsiState::Empty;
                     }

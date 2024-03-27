@@ -28,9 +28,13 @@ impl TurmGui {
                 font_id.size = 24.0;
             }
         });
+
+        let cols: usize = 40;
+        let rows: usize = 30;
+
         let ws = nix::pty::Winsize {
-            ws_col: 30,
-            ws_row: 20,
+            ws_col: cols as u16,
+            ws_row: rows as u16,
             ws_xpixel: 0,
             ws_ypixel: 0,
         };
@@ -42,7 +46,7 @@ impl TurmGui {
             buf: vec![],
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
-            turm: Turm::new(30, 20),
+            turm: Turm::new(cols, rows),
         }
     }
 }
@@ -64,6 +68,7 @@ impl eframe::App for TurmGui {
                             self.turm.input(*c);
                         }
                     }
+                    AnsiOutput::ClearToEndOfLine(_mode) => self.turm.clear_to_end_of_line(),
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),
                     AnsiOutput::Bell => println!("DING DONG"),
