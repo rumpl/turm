@@ -47,6 +47,7 @@ impl Turm {
             self.cursor.pos.x = 0;
             self.cursor.pos.y += 1;
         }
+
         if self.cursor.pos.y == self.lines {
             self.cursor.pos.y = self.lines - 1;
             self.cursor.pos.x = 0;
@@ -87,7 +88,9 @@ impl Turm {
         }
     }
 
-    pub fn home(&mut self, x: usize, y: usize) {
+    pub fn move_cursor(&mut self, x: usize, y: usize) {
+        // TODO: nvim and vim will tell us to move the cursor
+        // outside of the screen, figure out what's that all about
         self.cursor.pos.x = x;
         self.cursor.pos.y = y;
     }
