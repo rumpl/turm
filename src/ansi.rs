@@ -199,6 +199,9 @@ impl Ansi {
                         match d.func {
                             ansi_codes::SGR => {
                                 let params = parse_params(&d.params);
+                                if params.is_empty() {
+                                    res.push(AnsiOutput::Sgr(SelectGraphicRendition::Reset));
+                                }
                                 for param in params {
                                     res.push(AnsiOutput::Sgr(param.into()));
                                 }
