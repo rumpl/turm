@@ -73,6 +73,12 @@ impl eframe::App for TurmGui {
                     AnsiOutput::MoveCursor(x, y) => {
                         self.turm.move_cursor(*x, *y);
                     }
+                    AnsiOutput::CursorUp(amount) => self
+                        .turm
+                        .move_cursor(self.turm.cursor.pos.x, self.turm.cursor.pos.y - amount),
+                    AnsiOutput::CursorDown(amount) => self
+                        .turm
+                        .move_cursor(self.turm.cursor.pos.x, self.turm.cursor.pos.y + amount),
                     AnsiOutput::ScrollDown => self.turm.scroll_down(),
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),

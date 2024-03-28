@@ -144,6 +144,8 @@ pub enum AnsiOutput {
     MoveCursor(usize, usize),
     Bell,
     Sgr(SelectGraphicRendition),
+    CursorUp(usize),
+    CursorDown(usize),
 }
 
 impl Ansi {
@@ -218,6 +220,16 @@ impl Ansi {
                                 let x = if params.len() <= 1 { 1 } else { params[1] };
                                 let y = if params.is_empty() { 1 } else { params[0] };
                                 res.push(AnsiOutput::MoveCursor(x - 1, y - 1));
+                            }
+                            ansi_codes::CURSOR_UP => {
+                                let params = parse_params(&d.params);
+                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                res.push(AnsiOutput::CursorUp(amount));
+                            }
+                            ansi_codes::CURSOR_DOWN => {
+                                let params = parse_params(&d.params);
+                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                res.push(AnsiOutput::CursorDown(amount));
                             }
                             _ => {
                                 println!("unknown func {} {}", d.func, d.func as char);

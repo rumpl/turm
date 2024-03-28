@@ -5,6 +5,8 @@ pub const ESC_START: u8 = b'[';
 pub const SCROLL_REVERSE: u8 = b'M';
 
 pub const SGR: u8 = b'm';
+pub const CURSOR_UP: u8 = b'A';
+pub const CURSOR_DOWN: u8 = b'B';
 pub const CLEAR_LINE: u8 = b'K';
 pub const CLEAR_EOS: u8 = b'J';
 pub const HOME: u8 = b'H';
