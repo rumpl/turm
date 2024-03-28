@@ -1,7 +1,4 @@
-use std::{
-    ffi::CStr,
-    os::fd::{AsRawFd, OwnedFd},
-};
+use std::ffi::CStr;
 
 use gui::TurmGui;
 
@@ -12,15 +9,6 @@ mod grid;
 mod gui;
 mod row;
 mod turm;
-
-fn set_nonblock(fd: &OwnedFd) {
-    let flags = nix::fcntl::fcntl(fd.as_raw_fd(), nix::fcntl::FcntlArg::F_GETFL).unwrap();
-    let mut flags =
-        nix::fcntl::OFlag::from_bits(flags & nix::fcntl::OFlag::O_ACCMODE.bits()).unwrap();
-    flags.set(nix::fcntl::OFlag::O_NONBLOCK, true);
-
-    nix::fcntl::fcntl(fd.as_raw_fd(), nix::fcntl::FcntlArg::F_SETFL(flags)).unwrap();
-}
 
 fn main() {
     let result = unsafe { nix::pty::forkpty(None, None).unwrap() };
@@ -37,7 +25,6 @@ fn main() {
                 }
             });
 
-            set_nonblock(&result.master);
             let options = eframe::NativeOptions::default();
             _ = eframe::run_native(
                 "💩 Turm 💩",

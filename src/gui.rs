@@ -1,4 +1,8 @@
-use std::os::fd::{AsRawFd, OwnedFd};
+use std::{
+    os::fd::{AsRawFd, OwnedFd},
+    sync::mpsc::{self, Receiver, Sender},
+    thread,
+};
 
 use crate::{
     ansi::{Ansi, AnsiOutput, SelectGraphicRendition},
@@ -16,8 +20,9 @@ ioctl_write_ptr_bad!(
 pub struct TurmGui {
     buf: Vec<AnsiOutput>,
     turm: Turm,
-    fd: OwnedFd,
     ansi: Ansi,
+    rx: Receiver<Vec<u8>>,
+    rtx: Sender<Vec<u8>>,
 }
 
 impl TurmGui {
@@ -38,29 +43,110 @@ impl TurmGui {
             ws_xpixel: 0,
             ws_ypixel: 0,
         };
+
         unsafe {
             let _ = set_window_size_ioctl(fd.as_raw_fd(), &ws);
         }
+
+        let (tx, rx) = mpsc::channel::<Vec<u8>>();
+        let rs = cc.egui_ctx.clone();
+        let fd2 = fd.try_clone().unwrap();
+        // Thread that reads output from the shell and sends it to the gui
+        thread::spawn(move || loop {
+            let mut buf = vec![0u8; 4096];
+            let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
+            if let Ok(s) = ret {
+                if s != 0 {
+                    let _ = tx.send(buf[0..s].to_vec());
+                    rs.request_repaint();
+                }
+            } else {
+                rs.request_repaint();
+            }
+        });
+
+        let (rtx, rrx) = mpsc::channel::<Vec<u8>>();
+        // Thread that gets user input and sends it to the shell
+        thread::spawn(move || loop {
+            let input = rrx.recv().unwrap();
+            let _ret = nix::unistd::write(fd2.as_raw_fd(), &input);
+        });
+
         Self {
-            fd,
+            rx,
+            rtx,
             buf: vec![],
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
             turm: Turm::new(cols, rows),
         }
     }
+
+    fn write_input_to_terminal(&self, input: &InputState) {
+        for event in &input.events {
+            let text = match event {
+                Event::Text(text) => Some(text.as_str()),
+                Event::Key {
+                    key: Key::Backspace,
+                    pressed: true,
+                    ..
+                } => Some("\u{8}"),
+                Event::Key {
+                    key: Key::Enter,
+                    pressed: true,
+                    ..
+                } => Some("\n"),
+                Event::Key {
+                    key: Key::ArrowUp,
+                    pressed: true,
+                    ..
+                } => Some("\x1bOA"),
+                Event::Key {
+                    key: Key::ArrowDown,
+                    pressed: true,
+                    ..
+                } => Some("\x1bOB"),
+                Event::Key {
+                    key: Key::Tab,
+                    pressed: true,
+                    ..
+                } => Some("\t"),
+                Event::Key {
+                    key: Key::Escape,
+                    pressed: true,
+                    ..
+                } => Some("\x1b"),
+                Event::Key {
+                    key,
+                    modifiers: Modifiers { ctrl: true, .. },
+                    pressed: true,
+                    ..
+                } => {
+                    // Meh...
+                    let n = key.name().chars().next().unwrap();
+                    let mut m = n as u8;
+                    m &= 0b1001_1111;
+                    let _ = self.rtx.send(vec![m]);
+                    None
+                }
+                _ => None,
+            };
+
+            if let Some(text) = text {
+                let _ = self.rtx.send(text.into());
+            }
+        }
+    }
 }
+
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let font_size = 14.0;
         let line_height = font_size + 6.0;
 
-        let mut buf = vec![0u8; 4096];
-        let ret = nix::unistd::read(self.fd.as_raw_fd(), &mut buf);
-
-        if let Ok(read_size) = ret {
-            let inc = &buf[0..read_size];
-            let mut ansi_res = self.ansi.push(inc);
+        let ret = self.rx.try_recv();
+        if let Ok(buf) = ret {
+            let mut ansi_res = self.ansi.push(&buf);
             for q in &ansi_res {
                 match q {
                     AnsiOutput::Text(str) => {
@@ -90,7 +176,7 @@ impl eframe::App for TurmGui {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.input(|input_state| {
-                write_input_to_terminal(input_state, &self.fd);
+                self.write_input_to_terminal(input_state);
             });
 
             let font_id = FontId {
@@ -126,62 +212,6 @@ impl eframe::App for TurmGui {
             let size = egui::vec2(width, font_size);
             painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
         });
-    }
-}
-
-fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
-    for event in &input.events {
-        let text = match event {
-            Event::Text(text) => Some(text.as_str()),
-            Event::Key {
-                key: Key::Backspace,
-                pressed: true,
-                ..
-            } => Some("\u{8}"),
-            Event::Key {
-                key: Key::Enter,
-                pressed: true,
-                ..
-            } => Some("\n"),
-            Event::Key {
-                key: Key::ArrowUp,
-                pressed: true,
-                ..
-            } => Some("\x1bOA"),
-            Event::Key {
-                key: Key::ArrowDown,
-                pressed: true,
-                ..
-            } => Some("\x1bOB"),
-            Event::Key {
-                key: Key::Tab,
-                pressed: true,
-                ..
-            } => Some("\t"),
-            Event::Key {
-                key: Key::Escape,
-                pressed: true,
-                ..
-            } => Some("\x1b"),
-            Event::Key {
-                key,
-                modifiers: Modifiers { ctrl: true, .. },
-                pressed: true,
-                ..
-            } => {
-                // Meh...
-                let n = key.name().chars().next().unwrap();
-                let mut m = n as u8;
-                m &= 0b1001_1111;
-                let _ret = nix::unistd::write(fd.as_raw_fd(), &[m]);
-                None
-            }
-            _ => None,
-        };
-
-        if let Some(text) = text {
-            let _ret = nix::unistd::write(fd.as_raw_fd(), text.as_bytes());
-        }
     }
 }
 
