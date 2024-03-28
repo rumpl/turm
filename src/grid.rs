@@ -9,7 +9,9 @@ use crate::{ansi::SelectGraphicRendition, row::Row};
 pub struct Grid {
     rows: Vec<Row>,
     scrollback: Vec<Row>,
+    //scrollup: Vec<Row>,
     index: usize,
+    columns: usize,
 }
 
 impl Grid {
@@ -21,22 +23,33 @@ impl Grid {
             rows,
             index: 0,
             scrollback: vec![],
+            //scrollup: vec![],
+            columns,
         }
     }
 
     /// Scrolls the grid up by one
     pub fn scroll_up(&mut self) {
-        for i in 1..self.rows.len() {
+        let len = self.rows.len();
+        for i in 1..len {
             self.rows.swap(i - 1, i);
         }
-        let len = self.rows.len();
         self.scrollback.push(self.rows[len - 1].clone());
+        // TODO: use scrollup
         self.rows[len - 1].reset();
+        // println!("scroll up");
+        // println!("{}", self);
     }
 
-    /// Scrolls the grid down by one
+    /// Scrolls the grid down by one, taking the last row from the scrollback
     pub fn scroll_down(&mut self) {
-        // TODO implement scroll down, "less" needs it
+        let len = self.rows.len();
+        for i in (1..len).rev() {
+            self.rows.swap(i - 1, i);
+        }
+        self.rows[0] = self.scrollback.pop().unwrap();
+        // println!("scroll down");
+        // println!("{}", self);
     }
 
     pub fn sections(&self) -> Vec<TextSection> {
@@ -71,6 +84,34 @@ impl Grid {
         }
 
         res
+    }
+
+    fn print_vec(&self, v: &[Row], f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "|")?;
+        for _ in 0..self.columns {
+            write!(f, "_")?;
+        }
+        writeln!(f, "|")?;
+
+        for row in v {
+            write!(f, "|")?;
+            for cell in &row.inner {
+                if cell.c == '\t' {
+                    write!(f, " ")?;
+                } else {
+                    write!(f, "{}", cell.c)?;
+                }
+            }
+            writeln!(f, "|")?;
+        }
+
+        write!(f, "|")?;
+        for _ in 0..self.columns {
+            write!(f, "_")?;
+        }
+        writeln!(f, "|")?;
+
+        Ok(())
     }
 }
 
@@ -109,29 +150,10 @@ impl Iterator for Grid {
 
 impl Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "|")?;
-        for _ in &self.rows[0].inner {
-            write!(f, "_")?;
-        }
-        writeln!(f, "|")?;
-
-        for row in &self.rows {
-            write!(f, "|")?;
-            for cell in &row.inner {
-                if cell.c == '\t' {
-                    write!(f, " ")?;
-                } else {
-                    write!(f, "{}", cell.c)?;
-                }
-            }
-            writeln!(f, "|")?;
-        }
-
-        write!(f, "|")?;
-        for _ in &self.rows[0].inner {
-            write!(f, "_")?;
-        }
-        writeln!(f, "|")?;
+        writeln!(f, "\n\n#################################3\n\n")?;
+        self.print_vec(&self.scrollback, f)?;
+        writeln!(f, "-------------------------------------")?;
+        self.print_vec(&self.rows, f)?;
 
         Ok(())
     }

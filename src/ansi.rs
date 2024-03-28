@@ -187,6 +187,7 @@ impl Ansi {
                         }
                         ansi_codes::SCROLL_REVERSE => {
                             res.push(AnsiOutput::ScrollDown);
+                            self.state = AnsiState::Empty;
                         }
                         _ => {
                             println!("unknown ansi {b} {:#02x}", b);
@@ -214,8 +215,8 @@ impl Ansi {
                             ansi_codes::CLEAR_EOS => res.push(AnsiOutput::ClearToEOS),
                             ansi_codes::HOME => {
                                 let params = parse_params(&d.params);
-                                let x = if params.is_empty() { 1 } else { params[0] };
-                                let y = if params.len() <= 1 { 1 } else { params[1] };
+                                let x = if params.len() <= 1 { 1 } else { params[1] };
+                                let y = if params.is_empty() { 1 } else { params[0] };
                                 res.push(AnsiOutput::MoveCursor(x - 1, y - 1));
                             }
                             _ => {
