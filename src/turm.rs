@@ -86,8 +86,6 @@ impl Turm {
     }
 
     pub fn move_cursor(&mut self, x: usize, y: usize) {
-        // TODO: nvim and vim will tell us to move the cursor
-        // outside of the screen, figure out what's that all about
         self.cursor.pos.x = x;
         self.cursor.pos.y = y;
     }
