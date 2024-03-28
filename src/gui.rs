@@ -4,7 +4,7 @@ use crate::{
     ansi::{Ansi, AnsiOutput, SelectGraphicRendition},
     turm::Turm,
 };
-use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Rect, TextStyle};
+use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, TextStyle};
 use nix::ioctl_write_ptr_bad;
 
 ioctl_write_ptr_bad!(
@@ -29,8 +29,8 @@ impl TurmGui {
             }
         });
 
-        let cols: usize = 40;
-        let rows: usize = 20;
+        let cols: usize = 90;
+        let rows: usize = 30;
 
         let ws = nix::pty::Winsize {
             ws_col: cols as u16,
@@ -52,8 +52,8 @@ impl TurmGui {
 }
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let font_size = 24.0;
-        let line_height = font_size + 4.0;
+        let font_size = 14.0;
+        let line_height = font_size + 6.0;
 
         let mut buf = vec![0u8; 4096];
         let ret = nix::unistd::read(self.fd.as_raw_fd(), &mut buf);
@@ -152,6 +152,24 @@ fn write_input_to_terminal(input: &InputState, fd: &OwnedFd) {
                 pressed: true,
                 ..
             } => Some("\t"),
+            Event::Key {
+                key: Key::Escape,
+                pressed: true,
+                ..
+            } => Some("\x1b"),
+            Event::Key {
+                key,
+                modifiers: Modifiers { ctrl: true, .. },
+                pressed: true,
+                ..
+            } => {
+                // Meh...
+                let n = key.name().chars().next().unwrap();
+                let mut m = n as u8;
+                m &= 0b1001_1111;
+                let _ret = nix::unistd::write(fd.as_raw_fd(), &[m]);
+                None
+            }
             _ => None,
         };
 
