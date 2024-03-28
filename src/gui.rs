@@ -71,7 +71,6 @@ impl eframe::App for TurmGui {
                     AnsiOutput::ClearToEndOfLine(_mode) => self.turm.clear_to_end_of_line(),
                     AnsiOutput::ClearToEOS => self.turm.clear_to_eos(),
                     AnsiOutput::MoveCursor(x, y) => {
-                        print!("gui ");
                         self.turm.move_cursor(*x, *y);
                     }
                     AnsiOutput::ScrollDown => self.turm.scroll_down(),
