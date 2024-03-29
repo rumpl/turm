@@ -48,17 +48,18 @@ impl TurmGui {
             let _ = set_window_size_ioctl(fd.as_raw_fd(), &ws);
         }
 
-        let (tx, rx) = mpsc::channel::<Vec<u8>>();
+        let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(0);
         let rs = cc.egui_ctx.clone();
         let fd2 = fd.try_clone().unwrap();
         // Thread that reads output from the shell and sends it to the gui
         thread::spawn(move || loop {
             let mut buf = vec![0u8; 4096];
+
             let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
             if let Ok(s) = ret {
                 if s != 0 {
-                    let _ = tx.send(buf[0..s].to_vec());
                     rs.request_repaint();
+                    let _ = tx.send(buf[0..s].to_vec());
                 }
             } else {
                 rs.request_repaint();
