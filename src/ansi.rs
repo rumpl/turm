@@ -146,6 +146,7 @@ pub enum AnsiOutput {
     Sgr(SelectGraphicRendition),
     CursorUp(usize),
     CursorDown(usize),
+    MoveCursorHorizontal(usize),
 }
 
 impl Ansi {
@@ -215,11 +216,16 @@ impl Ansi {
                                 res.push(AnsiOutput::ClearToEndOfLine(mode.into()));
                             }
                             ansi_codes::CLEAR_EOS => res.push(AnsiOutput::ClearToEOS),
-                            ansi_codes::HOME => {
+                            ansi_codes::CURSOR_POSITION => {
                                 let params = parse_params(&d.params);
                                 let x = if params.len() <= 1 { 1 } else { params[1] };
                                 let y = if params.is_empty() { 1 } else { params[0] };
                                 res.push(AnsiOutput::MoveCursor(x - 1, y - 1));
+                            }
+                            ansi_codes::CURSOR_HORIZONTAL_POSITION => {
+                                let params = parse_params(&d.params);
+                                let x = if params.is_empty() { 1 } else { params[0] };
+                                res.push(AnsiOutput::MoveCursorHorizontal(x));
                             }
                             ansi_codes::CURSOR_UP => {
                                 let params = parse_params(&d.params);

@@ -9,4 +9,5 @@ pub const CURSOR_UP: u8 = b'A';
 pub const CURSOR_DOWN: u8 = b'B';
 pub const CLEAR_LINE: u8 = b'K';
 pub const CLEAR_EOS: u8 = b'J';
-pub const HOME: u8 = b'H';
+pub const CURSOR_POSITION: u8 = b'H';
+pub const CURSOR_HORIZONTAL_POSITION: u8 = b'G';

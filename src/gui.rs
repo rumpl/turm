@@ -159,6 +159,9 @@ impl eframe::App for TurmGui {
                     AnsiOutput::MoveCursor(x, y) => {
                         self.turm.move_cursor(*x, *y);
                     }
+                    AnsiOutput::MoveCursorHorizontal(x) => {
+                        self.turm.move_cursor(*x, self.turm.cursor.pos.y)
+                    }
                     AnsiOutput::CursorUp(amount) => self
                         .turm
                         .move_cursor(self.turm.cursor.pos.x, self.turm.cursor.pos.y - amount),
