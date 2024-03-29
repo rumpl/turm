@@ -23,6 +23,7 @@ pub struct TurmGui {
     ansi: Ansi,
     rx: Receiver<Vec<u8>>,
     rtx: Sender<Vec<u8>>,
+    show_cursor: bool,
 }
 
 impl TurmGui {
@@ -80,6 +81,7 @@ impl TurmGui {
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
             turm: Turm::new(cols, rows),
+            show_cursor: true,
         }
     }
 
@@ -169,6 +171,8 @@ impl eframe::App for TurmGui {
                     AnsiOutput::CursorDown(amount) => self
                         .turm
                         .move_cursor(self.turm.cursor.pos.x, self.turm.cursor.pos.y + amount),
+                    AnsiOutput::HideCursor => self.show_cursor = false,
+                    AnsiOutput::ShowCursor => self.show_cursor = true,
                     AnsiOutput::ScrollDown => self.turm.scroll_down(),
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),
@@ -203,18 +207,20 @@ impl eframe::App for TurmGui {
             }
             let res = ui.label(job);
 
-            let mut width = 0.0;
-            ctx.fonts(|font| {
-                width = font.glyph_width(&font_id, 'i');
-            });
+            if self.show_cursor {
+                let mut width = 0.0;
+                ctx.fonts(|font| {
+                    width = font.glyph_width(&font_id, 'm');
+                });
 
-            let painter = ui.painter();
-            let pos = egui::pos2(
-                (self.turm.cursor.pos.x as f32) * width + res.rect.left(),
-                (self.turm.cursor.pos.y as f32) * line_height + res.rect.top(),
-            );
-            let size = egui::vec2(width, font_size);
-            painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
+                let painter = ui.painter();
+                let pos = egui::pos2(
+                    (self.turm.cursor.pos.x as f32) * width + res.rect.left(),
+                    (self.turm.cursor.pos.y as f32) * line_height + res.rect.top(),
+                );
+                let size = egui::vec2(width, font_size);
+                painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
+            }
         });
     }
 }

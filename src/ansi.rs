@@ -147,6 +147,8 @@ pub enum AnsiOutput {
     CursorUp(usize),
     CursorDown(usize),
     MoveCursorHorizontal(usize),
+    HideCursor,
+    ShowCursor,
 }
 
 impl Ansi {
@@ -237,6 +239,8 @@ impl Ansi {
                                 let amount = if params.is_empty() { 1 } else { params[0] };
                                 res.push(AnsiOutput::CursorDown(amount));
                             }
+                            ansi_codes::HIDE_CURSOR => res.push(AnsiOutput::HideCursor),
+                            ansi_codes::SHOW_CURSOR => res.push(AnsiOutput::ShowCursor),
                             _ => {
                                 println!("unknown func {} {}", d.func, d.func as char);
                             }
