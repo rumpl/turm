@@ -54,11 +54,11 @@ impl Grid {
 
         for row in &self.rows {
             for col in &row.inner {
-                if col.fg != current_fg {
+                if col.fg != current_fg || col.bg != current_bg {
                     let ts = TextSection {
                         text: text.clone(),
                         fg: current_fg,
-                        bg: current_fg,
+                        bg: current_bg,
                     };
                     current_fg = col.fg;
                     current_bg = col.bg;

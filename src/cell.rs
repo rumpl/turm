@@ -13,7 +13,7 @@ impl Cell {
         Self {
             c: '.',
             fg: SelectGraphicRendition::ForegroundWhite,
-            bg: SelectGraphicRendition::Reset, // TODO: add background colors
+            bg: SelectGraphicRendition::BackgroundBlack,
             wrap: false,
         }
     }

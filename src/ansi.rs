@@ -74,7 +74,6 @@ pub struct Ansi {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SelectGraphicRendition {
-    Reset,
     ForegroundBlack,
     ForegroundRed,
     ForegroundGreen,
@@ -84,6 +83,7 @@ pub enum SelectGraphicRendition {
     ForegroundCyan,
     ForegroundWhite,
     ForegroundGrey,
+
     ForegroundBrightRed,
     ForegroundBrightGreen,
     ForegroundBrightYellow,
@@ -91,6 +91,26 @@ pub enum SelectGraphicRendition {
     ForegroundBrightMagenta,
     ForegroundBrightCyan,
     ForegroundBrightWhite,
+
+    BackgroundBlack,
+    BackgroundRed,
+    BackgroundGreen,
+    BackgroundYellow,
+    BackgroundBlue,
+    BackgroundMagenta,
+    BackgroundCyan,
+    BackgroundWhite,
+    BackgroundGrey,
+
+    BackgroundBrightRed,
+    BackgroundBrightGreen,
+    BackgroundBrightYellow,
+    BackgroundBrightBlue,
+    BackgroundBrightMagenta,
+    BackgroundBrightCyan,
+    BackgroundBrightWhite,
+
+    ForegroundRGB(usize, usize, usize),
 }
 
 impl From<usize> for SelectGraphicRendition {
@@ -104,6 +124,7 @@ impl From<usize> for SelectGraphicRendition {
             35 => Self::ForegroundMagenta,
             36 => Self::ForegroundCyan,
             37 => Self::ForegroundWhite,
+
             90 => Self::ForegroundGrey,
             91 => Self::ForegroundBrightRed,
             92 => Self::ForegroundBrightGreen,
@@ -112,8 +133,55 @@ impl From<usize> for SelectGraphicRendition {
             95 => Self::ForegroundBrightMagenta,
             96 => Self::ForegroundBrightCyan,
             97 => Self::ForegroundBrightWhite,
-            _ => Self::Reset,
+
+            40 => Self::BackgroundBlack,
+            41 => Self::BackgroundRed,
+            42 => Self::BackgroundGreen,
+            43 => Self::BackgroundYellow,
+            44 => Self::BackgroundBlue,
+            45 => Self::BackgroundMagenta,
+            46 => Self::BackgroundCyan,
+            47 => Self::BackgroundWhite,
+
+            100 => Self::BackgroundGrey,
+            101 => Self::BackgroundBrightRed,
+            102 => Self::BackgroundBrightGreen,
+            103 => Self::BackgroundBrightYellow,
+            104 => Self::BackgroundBrightBlue,
+            105 => Self::BackgroundBrightMagenta,
+            106 => Self::BackgroundBrightCyan,
+            107 => Self::BackgroundBrightWhite,
+            _ => panic!("unknown sgr {}", item),
         }
+    }
+}
+
+fn color_8bit(item: usize) -> SelectGraphicRendition {
+    match item {
+        0 => SelectGraphicRendition::ForegroundBlack,
+        1 => SelectGraphicRendition::ForegroundRed,
+        2 => SelectGraphicRendition::ForegroundGreen,
+        3 => SelectGraphicRendition::ForegroundYellow,
+        4 => SelectGraphicRendition::ForegroundBlue,
+        5 => SelectGraphicRendition::ForegroundMagenta,
+        6 => SelectGraphicRendition::ForegroundCyan,
+        7 => SelectGraphicRendition::ForegroundWhite,
+
+        8 => SelectGraphicRendition::ForegroundGrey,
+        9 => SelectGraphicRendition::ForegroundBrightRed,
+        10 => SelectGraphicRendition::ForegroundBrightGreen,
+        11 => SelectGraphicRendition::ForegroundBrightYellow,
+        12 => SelectGraphicRendition::ForegroundBrightBlue,
+        13 => SelectGraphicRendition::ForegroundBrightMagenta,
+        14 => SelectGraphicRendition::ForegroundBrightCyan,
+        15 => SelectGraphicRendition::ForegroundBrightWhite,
+
+        16..=231 => SelectGraphicRendition::ForegroundRGB(
+            (item - 16) & 0b1110_0000,
+            (item - 16) & 0b0001_1100,
+            (item - 16) & 0b0000_0011,
+        ),
+        _ => panic!("unknown sgr"),
     }
 }
 
@@ -208,10 +276,33 @@ impl Ansi {
                             ansi_codes::SGR => {
                                 let params = parse_params(&d.params);
                                 if params.is_empty() {
-                                    res.push(AnsiOutput::Sgr(SelectGraphicRendition::Reset));
-                                }
-                                for param in params {
-                                    res.push(AnsiOutput::Sgr(param.into()));
+                                    res.push(AnsiOutput::Sgr(
+                                        SelectGraphicRendition::BackgroundBlack,
+                                    ));
+                                    res.push(AnsiOutput::Sgr(
+                                        SelectGraphicRendition::ForegroundWhite,
+                                    ));
+                                } else {
+                                    if params[0] == 0 {
+                                        res.push(AnsiOutput::Sgr(
+                                            SelectGraphicRendition::BackgroundBlack,
+                                        ));
+                                        res.push(AnsiOutput::Sgr(
+                                            SelectGraphicRendition::ForegroundWhite,
+                                        ));
+                                    } else if params.len() >= 3 && params[0] == 38 && params[1] == 5
+                                    {
+                                        res.push(AnsiOutput::Sgr(color_8bit(params[2])));
+                                    } else {
+                                        for param in params {
+                                            // TODO: ugly hack to only take the color for now until we
+                                            // properly handle all the graphic rendition things, like
+                                            // "bold" for example
+                                            if param >= 30 && param <= 47 {
+                                                res.push(AnsiOutput::Sgr(param.into()));
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             ansi_codes::CLEAR_LINE => {

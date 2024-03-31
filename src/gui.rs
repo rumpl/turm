@@ -209,7 +209,7 @@ impl eframe::App for TurmGui {
                     egui::text::TextFormat {
                         font_id: font_id.clone(),
                         color: section.fg.into(),
-                        //                        background: section.bg.into(),
+                        background: section.bg.into(),
                         line_height: Some(line_height),
                         ..Default::default()
                     },
@@ -238,7 +238,6 @@ impl eframe::App for TurmGui {
 impl From<SelectGraphicRendition> for Color32 {
     fn from(sgr: SelectGraphicRendition) -> Self {
         match sgr {
-            SelectGraphicRendition::Reset => Self::WHITE,
             SelectGraphicRendition::ForegroundBlack => Self::BLACK,
             SelectGraphicRendition::ForegroundRed => Self::RED,
             SelectGraphicRendition::ForegroundGreen => Self::GREEN,
@@ -255,6 +254,27 @@ impl From<SelectGraphicRendition> for Color32 {
             SelectGraphicRendition::ForegroundBrightMagenta => Self::from_rgb(255, 0, 255),
             SelectGraphicRendition::ForegroundBrightCyan => Self::from_rgb(0, 255, 255),
             SelectGraphicRendition::ForegroundBrightWhite => Self::WHITE,
+
+            SelectGraphicRendition::ForegroundRGB(r, g, b) => {
+                Self::from_rgb(r as u8, g as u8, b as u8)
+            }
+            SelectGraphicRendition::BackgroundBlack => Self::BLACK,
+            SelectGraphicRendition::BackgroundRed => Self::RED,
+            SelectGraphicRendition::BackgroundGreen => Self::GREEN,
+            SelectGraphicRendition::BackgroundYellow => Self::YELLOW,
+            SelectGraphicRendition::BackgroundBlue => Self::BLUE,
+            SelectGraphicRendition::BackgroundMagenta => Self::from_rgb(255, 0, 255),
+            SelectGraphicRendition::BackgroundCyan => Self::from_rgb(0, 255, 255),
+            SelectGraphicRendition::BackgroundWhite => Self::WHITE,
+            SelectGraphicRendition::BackgroundGrey => Self::GRAY,
+
+            SelectGraphicRendition::BackgroundBrightRed => Self::RED,
+            SelectGraphicRendition::BackgroundBrightGreen => Self::GREEN,
+            SelectGraphicRendition::BackgroundBrightYellow => Self::YELLOW,
+            SelectGraphicRendition::BackgroundBrightBlue => Self::BLUE,
+            SelectGraphicRendition::BackgroundBrightMagenta => Self::from_rgb(255, 0, 255),
+            SelectGraphicRendition::BackgroundBrightCyan => Self::from_rgb(0, 255, 255),
+            SelectGraphicRendition::BackgroundBrightWhite => Self::WHITE,
         }
     }
 }
