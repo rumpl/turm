@@ -1,5 +1,3 @@
-use nix::sys::wait::wait;
-
 use crate::{ansi::SelectGraphicRendition, grid::Grid};
 
 #[derive(Debug, Default)]
