@@ -1,3 +1,5 @@
+use nix::sys::wait::wait;
+
 use crate::{ansi::SelectGraphicRendition, grid::Grid};
 
 #[derive(Debug, Default)]
@@ -86,6 +88,9 @@ impl Turm {
     }
 
     pub fn move_cursor(&mut self, x: usize, y: usize) {
+        if x >= self.columns || y >= self.lines {
+            return;
+        }
         self.cursor.pos.x = x;
         self.cursor.pos.y = y;
     }

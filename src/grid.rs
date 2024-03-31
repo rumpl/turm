@@ -48,17 +48,20 @@ impl Grid {
     pub fn sections(&self) -> Vec<TextSection> {
         let mut res = vec![];
 
-        let mut current_style = self.rows[0][0].fg;
+        let mut current_fg = self.rows[0][0].fg;
+        let mut current_bg = self.rows[0][0].bg;
         let mut text = String::new();
 
         for row in &self.rows {
             for col in &row.inner {
-                if col.fg != current_style {
+                if col.fg != current_fg {
                     let ts = TextSection {
                         text: text.clone(),
-                        fg: current_style,
+                        fg: current_fg,
+                        bg: current_fg,
                     };
-                    current_style = col.fg;
+                    current_fg = col.fg;
+                    current_bg = col.bg;
                     text = "".to_string();
 
                     res.push(ts);
@@ -71,7 +74,8 @@ impl Grid {
         if !text.is_empty() {
             let ts = TextSection {
                 text: text.clone(),
-                fg: current_style,
+                fg: current_fg,
+                bg: current_bg,
             };
             res.push(ts);
         }
@@ -111,6 +115,7 @@ impl Grid {
 pub struct TextSection {
     pub text: String,
     pub fg: SelectGraphicRendition,
+    pub bg: SelectGraphicRendition,
 }
 
 impl Index<usize> for Grid {

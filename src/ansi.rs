@@ -149,6 +149,8 @@ pub enum AnsiOutput {
     MoveCursorHorizontal(usize),
     HideCursor,
     ShowCursor,
+    CursorBackward(usize),
+    CursorForward(usize),
 }
 
 impl Ansi {
@@ -238,6 +240,16 @@ impl Ansi {
                                 let params = parse_params(&d.params);
                                 let amount = if params.is_empty() { 1 } else { params[0] };
                                 res.push(AnsiOutput::CursorDown(amount));
+                            }
+                            ansi_codes::CURSOR_FORWARD => {
+                                let params = parse_params(&d.params);
+                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                res.push(AnsiOutput::CursorForward(amount));
+                            }
+                            ansi_codes::CURSOR_BACKWARD => {
+                                let params = parse_params(&d.params);
+                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                res.push(AnsiOutput::CursorBackward(amount));
                             }
                             ansi_codes::HIDE_CURSOR => res.push(AnsiOutput::HideCursor),
                             ansi_codes::SHOW_CURSOR => res.push(AnsiOutput::ShowCursor),

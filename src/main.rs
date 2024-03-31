@@ -34,7 +34,7 @@ fn main() {
         }
         nix::unistd::ForkResult::Child => {
             std::env::set_var("TERM", "turm");
-            std::env::set_var("TERMINFO", "/Users/rumpl/hack/turm/res");
+            std::env::set_var("TERMINFO", "/home/rumpl/dev/turm/res");
             let command = CStr::from_bytes_with_nul(b"/bin/sh\0").unwrap();
             let args = [command];
             let _ = nix::unistd::execvp(command, &args);

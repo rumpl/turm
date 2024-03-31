@@ -159,9 +159,7 @@ impl eframe::App for TurmGui {
                     }
                     AnsiOutput::ClearToEndOfLine(_mode) => self.turm.clear_to_end_of_line(),
                     AnsiOutput::ClearToEOS => self.turm.clear_to_eos(),
-                    AnsiOutput::MoveCursor(x, y) => {
-                        self.turm.move_cursor(*x, *y);
-                    }
+                    AnsiOutput::MoveCursor(x, y) => self.turm.move_cursor(*x, *y),
                     AnsiOutput::MoveCursorHorizontal(x) => {
                         self.turm.move_cursor(*x, self.turm.cursor.pos.y)
                     }
@@ -171,8 +169,25 @@ impl eframe::App for TurmGui {
                     AnsiOutput::CursorDown(amount) => self
                         .turm
                         .move_cursor(self.turm.cursor.pos.x, self.turm.cursor.pos.y + amount),
-                    AnsiOutput::HideCursor => self.show_cursor = false,
-                    AnsiOutput::ShowCursor => self.show_cursor = true,
+                    AnsiOutput::CursorForward(amount) => self
+                        .turm
+                        .move_cursor(self.turm.cursor.pos.x + amount, self.turm.cursor.pos.y),
+                    AnsiOutput::CursorBackward(amount) => {
+                        if amount <= &self.turm.cursor.pos.x {
+                            self.turm.move_cursor(
+                                self.turm.cursor.pos.x - amount,
+                                self.turm.cursor.pos.y,
+                            );
+                        }
+                    }
+                    AnsiOutput::HideCursor => {
+                        println!("hide cursor");
+                        self.show_cursor = false;
+                    }
+                    AnsiOutput::ShowCursor => {
+                        self.show_cursor = true;
+                        println!("show cursor");
+                    }
                     AnsiOutput::ScrollDown => self.turm.scroll_down(),
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),
@@ -200,6 +215,7 @@ impl eframe::App for TurmGui {
                     egui::text::TextFormat {
                         font_id: font_id.clone(),
                         color: section.fg.into(),
+                        //                        background: section.bg.into(),
                         line_height: Some(line_height),
                         ..Default::default()
                     },
