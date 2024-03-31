@@ -88,7 +88,7 @@ impl Turm {
     }
 
     pub fn move_cursor(&mut self, x: usize, y: usize) {
-        if x >= self.columns || y >= self.lines {
+        if x > self.columns || y > self.lines {
             return;
         }
         self.cursor.pos.x = x;

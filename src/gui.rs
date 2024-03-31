@@ -180,14 +180,8 @@ impl eframe::App for TurmGui {
                             );
                         }
                     }
-                    AnsiOutput::HideCursor => {
-                        println!("hide cursor");
-                        self.show_cursor = false;
-                    }
-                    AnsiOutput::ShowCursor => {
-                        self.show_cursor = true;
-                        println!("show cursor");
-                    }
+                    AnsiOutput::HideCursor => self.show_cursor = false,
+                    AnsiOutput::ShowCursor => self.show_cursor = true,
                     AnsiOutput::ScrollDown => self.turm.scroll_down(),
                     AnsiOutput::Backspace => self.turm.backspace(),
                     AnsiOutput::Sgr(c) => self.turm.color(*c),
