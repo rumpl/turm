@@ -12,7 +12,7 @@ pub struct Cell {
 impl Cell {
     pub fn new() -> Self {
         Self {
-            c: '.',
+            c: ' ',
             fg: Color::WHITE,
             bg: Color::BLACK,
             bold: false,
