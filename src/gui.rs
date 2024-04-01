@@ -71,8 +71,9 @@ impl TurmGui {
         let (rtx, rrx) = mpsc::channel::<Vec<u8>>();
         // Thread that gets user input and sends it to the shell
         thread::spawn(move || loop {
-            let input = rrx.recv().unwrap();
-            let _ret = nix::unistd::write(fd2.as_raw_fd(), &input);
+            if let Ok(input) = rrx.recv() {
+                let _ret = nix::unistd::write(fd2.as_raw_fd(), &input);
+            }
         });
 
         Self {
