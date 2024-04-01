@@ -72,14 +72,8 @@ pub struct Ansi {
     state: AnsiState,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Color(pub [u8; 3]);
-
-impl Default for Color {
-    fn default() -> Self {
-        Self([0, 0, 0])
-    }
-}
 
 impl Color {
     pub const BLACK: Self = Self::from_rgb(0, 0, 0);
@@ -284,32 +278,22 @@ impl Ansi {
                         match d.func {
                             ansi_codes::SGR => {
                                 let params = parse_params(&d.params);
-                                if params.is_empty() {
+                                if params.is_empty() || params[0] == 0 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
                                         Color::BLACK,
                                     )));
                                     res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
                                         Color::WHITE,
                                     )));
+                                } else if params.len() >= 3 && params[0] == 38 && params[1] == 5 {
+                                    res.push(AnsiOutput::Sgr(color_8bit(params[2] as u8)));
                                 } else {
-                                    if params[0] == 0 {
-                                        res.push(AnsiOutput::Sgr(
-                                            GraphicRendition::BackgroundColor(Color::BLACK),
-                                        ));
-                                        res.push(AnsiOutput::Sgr(
-                                            GraphicRendition::ForegroundColor(Color::WHITE),
-                                        ));
-                                    } else if params.len() >= 3 && params[0] == 38 && params[1] == 5
-                                    {
-                                        res.push(AnsiOutput::Sgr(color_8bit(params[2] as u8)));
-                                    } else {
-                                        for param in params {
-                                            // TODO: ugly hack to only take the color for now until we
-                                            // properly handle all the graphic rendition things, like
-                                            // "bold" for example
-                                            if param >= 30 && param <= 47 {
-                                                res.push(AnsiOutput::Sgr((param as u8).into()));
-                                            }
+                                    for param in params {
+                                        // TODO: ugly hack to only take the color for now until we
+                                        // properly handle all the graphic rendition things, like
+                                        // "bold" for example
+                                        if (30..=47).contains(&param) {
+                                            res.push(AnsiOutput::Sgr((param as u8).into()));
                                         }
                                     }
                                 }
