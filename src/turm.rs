@@ -74,6 +74,7 @@ impl Turm {
                 self.current_style = Style::default();
             }
             GraphicRendition::Underline => self.current_style.underline = true,
+            GraphicRendition::Italic => self.current_style.italics = true,
         };
     }
 

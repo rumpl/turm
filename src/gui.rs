@@ -266,6 +266,7 @@ impl eframe::App for TurmGui {
                     color: section.style.fg.into(),
                     background: section.style.bg.into(),
                     underline,
+                    italics: section.style.italics,
                     line_height: Some(line_height),
                     ..Default::default()
                 };
