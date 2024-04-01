@@ -16,6 +16,7 @@ pub struct Turm {
     pub cursor: Cursor,
     current_fg_color: Color,
     current_bg_color: Color,
+    bold: bool,
     pub grid: Grid,
     lines: usize,
     columns: usize,
@@ -28,6 +29,7 @@ impl Turm {
             grid: Grid::new(columns, lines),
             current_fg_color: Color::WHITE,
             current_bg_color: Color::BLACK,
+            bold: false,
             lines,
             columns,
         }
@@ -42,6 +44,8 @@ impl Turm {
             self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;
             self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = self.current_fg_color;
             self.grid[self.cursor.pos.y][self.cursor.pos.x].bg = self.current_bg_color;
+            self.grid[self.cursor.pos.y][self.cursor.pos.x].bold = self.bold;
+
             self.move_cursor(self.cursor.pos.x + 1, self.cursor.pos.y);
         }
 
@@ -70,6 +74,12 @@ impl Turm {
             GraphicRendition::BackgroundColor(c) => {
                 self.grid[self.cursor.pos.y][self.cursor.pos.x].bg = c;
                 self.current_bg_color = c;
+            }
+            GraphicRendition::Bold => self.bold = true,
+            GraphicRendition::Reset => {
+                self.bold = false;
+                self.current_bg_color = Color::BLACK;
+                self.current_fg_color = Color::WHITE;
             }
         };
     }

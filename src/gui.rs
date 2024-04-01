@@ -30,17 +30,37 @@ pub struct TurmGui {
 impl TurmGui {
     pub fn new(cc: &eframe::CreationContext<'_>, fd: OwnedFd) -> Self {
         let mut fonts = egui::FontDefinitions::default();
+
         fonts.font_data.insert(
             "berkeley".to_owned(),
             egui::FontData::from_static(include_bytes!(
                 "/home/rumpl/.local/share/fonts/BerkeleyMono-Regular.ttf"
             )),
         );
+
+        fonts.font_data.insert(
+            "berkeley-bold".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "/home/rumpl/.local/share/fonts/BerkeleyMono-Bold.ttf"
+            )),
+        );
+
         fonts
             .families
             .entry(egui::FontFamily::Monospace)
             .or_default()
             .insert(0, "berkeley".to_owned());
+
+        fonts.families.insert(
+            FontFamily::Name("berkeley".into()),
+            vec!["berkeley".to_owned()],
+        );
+
+        fonts.families.insert(
+            FontFamily::Name("berkeley-bold".into()),
+            vec!["berkeley-bold".to_owned()],
+        );
+
         cc.egui_ctx.set_fonts(fonts);
 
         cc.egui_ctx.style_mut(|style| {
@@ -214,16 +234,25 @@ impl eframe::App for TurmGui {
 
             let font_id = FontId {
                 size: font_size,
-                family: FontFamily::Monospace,
+                family: FontFamily::Name("berkeley".into()),
+            };
+            let bold_font_id = FontId {
+                size: font_size,
+                family: FontFamily::Name("berkeley-bold".into()),
             };
 
             let mut job = egui::text::LayoutJob::default();
             for section in self.turm.grid.sections() {
+                let fid = if section.bold {
+                    bold_font_id.clone()
+                } else {
+                    font_id.clone()
+                };
                 job.append(
                     &section.text,
                     0.0,
                     egui::text::TextFormat {
-                        font_id: font_id.clone(),
+                        font_id: fid,
                         color: section.fg.into(),
                         background: section.bg.into(),
                         line_height: Some(line_height),

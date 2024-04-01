@@ -77,7 +77,8 @@ pub struct Ansi {
 pub enum GraphicRendition {
     BackgroundColor(Color),
     ForegroundColor(Color),
-    //Bold,
+    Bold,
+    Reset,
 }
 
 impl From<u8> for GraphicRendition {
@@ -246,7 +247,11 @@ impl Ansi {
                         match d.func {
                             ansi_codes::SGR => {
                                 let params = parse_params(&d.params);
-                                if params.is_empty() || params[0] == 0 {
+                                if params.len() == 1 && params[0] == 0 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Reset));
+                                } else if params.len() == 1 && params[0] == 1 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Bold));
+                                } else if params.is_empty() || params[0] == 0 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
                                         Color::BLACK,
                                     )));

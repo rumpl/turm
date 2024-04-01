@@ -51,6 +51,7 @@ impl Grid {
 
         let mut current_fg = self.rows[0][0].fg;
         let mut current_bg = self.rows[0][0].bg;
+        let mut current_bold = self.rows[0][0].bold;
         let mut text = String::new();
 
         for row in &self.rows {
@@ -60,9 +61,11 @@ impl Grid {
                         text: text.clone(),
                         fg: current_fg,
                         bg: current_bg,
+                        bold: current_bold,
                     };
                     current_fg = col.fg;
                     current_bg = col.bg;
+                    current_bold = col.bold;
                     text = "".to_string();
 
                     res.push(ts);
@@ -77,6 +80,7 @@ impl Grid {
                 text: text.clone(),
                 fg: current_fg,
                 bg: current_bg,
+                bold: current_bold,
             };
             res.push(ts);
         }
@@ -117,6 +121,7 @@ pub struct TextSection {
     pub text: String,
     pub fg: Color,
     pub bg: Color,
+    pub bold: bool,
 }
 
 impl Index<usize> for Grid {

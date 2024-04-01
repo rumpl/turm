@@ -5,6 +5,7 @@ pub struct Cell {
     pub c: char,
     pub fg: Color,
     pub bg: Color,
+    pub bold: bool,
     pub wrap: bool,
 }
 
@@ -14,6 +15,7 @@ impl Cell {
             c: '.',
             fg: Color::WHITE,
             bg: Color::BLACK,
+            bold: false,
             wrap: false,
         }
     }
