@@ -1,4 +1,4 @@
-use crate::{ansi::GraphicRendition, color::Color, grid::Grid};
+use crate::{ansi::GraphicRendition, cell::Style, grid::Grid};
 
 #[derive(Debug, Default)]
 pub struct CursorPos {
@@ -14,9 +14,7 @@ pub struct Cursor {
 #[derive(Debug)]
 pub struct Turm {
     pub cursor: Cursor,
-    current_fg_color: Color,
-    current_bg_color: Color,
-    bold: bool,
+    current_style: Style,
     pub grid: Grid,
     lines: usize,
     columns: usize,
@@ -27,9 +25,7 @@ impl Turm {
         Self {
             cursor: Cursor::default(),
             grid: Grid::new(columns, lines),
-            current_fg_color: Color::WHITE,
-            current_bg_color: Color::BLACK,
-            bold: false,
+            current_style: Style::default(),
             lines,
             columns,
         }
@@ -42,9 +38,7 @@ impl Turm {
             self.move_cursor(0, self.cursor.pos.y);
         } else {
             self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;
-            self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = self.current_fg_color;
-            self.grid[self.cursor.pos.y][self.cursor.pos.x].bg = self.current_bg_color;
-            self.grid[self.cursor.pos.y][self.cursor.pos.x].bold = self.bold;
+            self.grid[self.cursor.pos.y][self.cursor.pos.x].style = self.current_style;
 
             self.move_cursor(self.cursor.pos.x + 1, self.cursor.pos.y);
         }
@@ -68,18 +62,16 @@ impl Turm {
     pub fn color(&mut self, c: GraphicRendition) {
         match c {
             GraphicRendition::ForegroundColor(c) => {
-                self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = c;
-                self.current_fg_color = c;
+                self.grid[self.cursor.pos.y][self.cursor.pos.x].style.fg = c;
+                self.current_style.fg = c;
             }
             GraphicRendition::BackgroundColor(c) => {
-                self.grid[self.cursor.pos.y][self.cursor.pos.x].bg = c;
-                self.current_bg_color = c;
+                self.grid[self.cursor.pos.y][self.cursor.pos.x].style.bg = c;
+                self.current_style.bg = c;
             }
-            GraphicRendition::Bold => self.bold = true,
+            GraphicRendition::Bold => self.current_style.bold = true,
             GraphicRendition::Reset => {
-                self.bold = false;
-                self.current_bg_color = Color::BLACK;
-                self.current_fg_color = Color::WHITE;
+                self.current_style = Style::default();
             }
         };
     }
@@ -87,8 +79,7 @@ impl Turm {
     pub fn clear_to_end_of_line(&mut self) {
         for i in self.cursor.pos.x..self.columns {
             self.grid[self.cursor.pos.y][i].c = ' ';
-            self.grid[self.cursor.pos.y][i].fg = Color::WHITE;
-            self.grid[self.cursor.pos.y][i].bg = Color::BLACK;
+            self.grid[self.cursor.pos.y][i].style = Style::default();
         }
     }
 
@@ -97,8 +88,7 @@ impl Turm {
         let mut j = self.cursor.pos.y;
         loop {
             self.grid[j][i].c = ' ';
-            self.grid[j][i].fg = Color::WHITE;
-            self.grid[j][i].bg = Color::BLACK;
+            self.grid[j][i].style = Style::default();
             i += 1;
             if i == self.columns {
                 i = 0;

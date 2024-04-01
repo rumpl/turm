@@ -3,7 +3,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use crate::color::Color;
+use crate::cell::Style;
 use crate::row::Row;
 
 #[derive(Debug)]
@@ -49,26 +49,18 @@ impl Grid {
     pub fn sections(&self) -> Vec<TextSection> {
         let mut res = vec![];
 
-        let mut current_fg = self.rows[0][0].fg;
-        let mut current_bg = self.rows[0][0].bg;
-        let mut current_bold = self.rows[0][0].bold;
+        let mut current_style = self.rows[0][0].style;
         let mut text = String::new();
 
         for row in &self.rows {
             for col in &row.inner {
-                if col.fg != current_fg || col.bg != current_bg {
-                    let ts = TextSection {
+                if col.style != current_style {
+                    res.push(TextSection {
                         text: text.clone(),
-                        fg: current_fg,
-                        bg: current_bg,
-                        bold: current_bold,
-                    };
-                    current_fg = col.fg;
-                    current_bg = col.bg;
-                    current_bold = col.bold;
+                        style: current_style,
+                    });
                     text = "".to_string();
-
-                    res.push(ts);
+                    current_style = col.style;
                 }
                 text.push_str(&String::from(col.c));
             }
@@ -78,9 +70,7 @@ impl Grid {
         if !text.is_empty() {
             let ts = TextSection {
                 text: text.clone(),
-                fg: current_fg,
-                bg: current_bg,
-                bold: current_bold,
+                style: current_style,
             };
             res.push(ts);
         }
@@ -119,9 +109,7 @@ impl Grid {
 
 pub struct TextSection {
     pub text: String,
-    pub fg: Color,
-    pub bg: Color,
-    pub bold: bool,
+    pub style: Style,
 }
 
 impl Index<usize> for Grid {

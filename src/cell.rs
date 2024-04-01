@@ -1,22 +1,33 @@
 use crate::color::Color;
 
-#[derive(Debug, Copy, Clone)]
-pub struct Cell {
-    pub c: char,
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Style {
     pub fg: Color,
     pub bg: Color,
     pub bold: bool,
-    pub wrap: bool,
+}
+
+impl Default for Style {
+    fn default() -> Self {
+        Self {
+            fg: Color::WHITE,
+            bg: Color::BLACK,
+            bold: false,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Cell {
+    pub c: char,
+    pub style: Style,
 }
 
 impl Cell {
     pub fn new() -> Self {
         Self {
             c: ' ',
-            fg: Color::WHITE,
-            bg: Color::BLACK,
-            bold: false,
-            wrap: false,
+            style: Default::default(),
         }
     }
 }

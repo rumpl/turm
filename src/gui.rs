@@ -243,7 +243,7 @@ impl eframe::App for TurmGui {
 
             let mut job = egui::text::LayoutJob::default();
             for section in self.turm.grid.sections() {
-                let fid = if section.bold {
+                let fid = if section.style.bold {
                     bold_font_id.clone()
                 } else {
                     font_id.clone()
@@ -253,8 +253,8 @@ impl eframe::App for TurmGui {
                     0.0,
                     egui::text::TextFormat {
                         font_id: fid,
-                        color: section.fg.into(),
-                        background: section.bg.into(),
+                        color: section.style.fg.into(),
+                        background: section.style.bg.into(),
                         line_height: Some(line_height),
                         ..Default::default()
                     },
