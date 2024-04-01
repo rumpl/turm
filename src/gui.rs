@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    ansi::{Ansi, AnsiOutput, SelectGraphicRendition},
+    ansi::{Ansi, AnsiOutput, Color},
     turm::Turm,
 };
 use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, TextStyle};
@@ -35,7 +35,7 @@ impl TurmGui {
             }
         });
 
-        let cols: usize = 90;
+        let cols: usize = 120;
         let rows: usize = 30;
 
         let ws = nix::pty::Winsize {
@@ -235,46 +235,8 @@ impl eframe::App for TurmGui {
     }
 }
 
-impl From<SelectGraphicRendition> for Color32 {
-    fn from(sgr: SelectGraphicRendition) -> Self {
-        match sgr {
-            SelectGraphicRendition::ForegroundBlack => Self::BLACK,
-            SelectGraphicRendition::ForegroundRed => Self::RED,
-            SelectGraphicRendition::ForegroundGreen => Self::GREEN,
-            SelectGraphicRendition::ForegroundYellow => Self::YELLOW,
-            SelectGraphicRendition::ForegroundBlue => Self::BLUE,
-            SelectGraphicRendition::ForegroundMagenta => Self::from_rgb(255, 0, 255),
-            SelectGraphicRendition::ForegroundCyan => Self::from_rgb(0, 255, 255),
-            SelectGraphicRendition::ForegroundWhite => Self::WHITE,
-            SelectGraphicRendition::ForegroundGrey => Self::GRAY, // lol
-            SelectGraphicRendition::ForegroundBrightRed => Self::RED,
-            SelectGraphicRendition::ForegroundBrightGreen => Self::GREEN,
-            SelectGraphicRendition::ForegroundBrightYellow => Self::YELLOW,
-            SelectGraphicRendition::ForegroundBrightBlue => Self::BLUE,
-            SelectGraphicRendition::ForegroundBrightMagenta => Self::from_rgb(255, 0, 255),
-            SelectGraphicRendition::ForegroundBrightCyan => Self::from_rgb(0, 255, 255),
-            SelectGraphicRendition::ForegroundBrightWhite => Self::WHITE,
-
-            SelectGraphicRendition::ForegroundRGB(r, g, b) => {
-                Self::from_rgb(r as u8, g as u8, b as u8)
-            }
-            SelectGraphicRendition::BackgroundBlack => Self::BLACK,
-            SelectGraphicRendition::BackgroundRed => Self::RED,
-            SelectGraphicRendition::BackgroundGreen => Self::GREEN,
-            SelectGraphicRendition::BackgroundYellow => Self::YELLOW,
-            SelectGraphicRendition::BackgroundBlue => Self::BLUE,
-            SelectGraphicRendition::BackgroundMagenta => Self::from_rgb(255, 0, 255),
-            SelectGraphicRendition::BackgroundCyan => Self::from_rgb(0, 255, 255),
-            SelectGraphicRendition::BackgroundWhite => Self::WHITE,
-            SelectGraphicRendition::BackgroundGrey => Self::GRAY,
-
-            SelectGraphicRendition::BackgroundBrightRed => Self::RED,
-            SelectGraphicRendition::BackgroundBrightGreen => Self::GREEN,
-            SelectGraphicRendition::BackgroundBrightYellow => Self::YELLOW,
-            SelectGraphicRendition::BackgroundBrightBlue => Self::BLUE,
-            SelectGraphicRendition::BackgroundBrightMagenta => Self::from_rgb(255, 0, 255),
-            SelectGraphicRendition::BackgroundBrightCyan => Self::from_rgb(0, 255, 255),
-            SelectGraphicRendition::BackgroundBrightWhite => Self::WHITE,
-        }
+impl From<Color> for Color32 {
+    fn from(c: Color) -> Self {
+        Self::from_rgb(c.0[0], c.0[1], c.0[2])
     }
 }

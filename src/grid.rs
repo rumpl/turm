@@ -3,7 +3,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use crate::{ansi::SelectGraphicRendition, row::Row};
+use crate::{ansi::Color, row::Row};
 
 #[derive(Debug)]
 pub struct Grid {
@@ -114,8 +114,8 @@ impl Grid {
 
 pub struct TextSection {
     pub text: String,
-    pub fg: SelectGraphicRendition,
-    pub bg: SelectGraphicRendition,
+    pub fg: Color,
+    pub bg: Color,
 }
 
 impl Index<usize> for Grid {

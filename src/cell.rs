@@ -1,10 +1,10 @@
-use crate::ansi::SelectGraphicRendition;
+use crate::ansi::Color;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Cell {
     pub c: char,
-    pub fg: SelectGraphicRendition,
-    pub bg: SelectGraphicRendition,
+    pub fg: Color,
+    pub bg: Color,
     pub wrap: bool,
 }
 
@@ -12,8 +12,8 @@ impl Cell {
     pub fn new() -> Self {
         Self {
             c: '.',
-            fg: SelectGraphicRendition::ForegroundWhite,
-            bg: SelectGraphicRendition::BackgroundBlack,
+            fg: Color::WHITE,
+            bg: Color::BLACK,
             wrap: false,
         }
     }
