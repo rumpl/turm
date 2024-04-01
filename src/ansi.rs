@@ -121,7 +121,8 @@ impl From<u8> for GraphicRendition {
                     106 => Self::BackgroundBrightCyan,
                     107 => Self::BackgroundBrightWhite,
             */
-            _ => panic!("unknown sgr {}", item),
+            // TODO: Why would we get a panic for an unknown sgr 38 when we run nvim?
+            _ => Self::ForegroundColor(Color::WHITE), // panic!("unknown sgr {}", item),
         }
     }
 }
