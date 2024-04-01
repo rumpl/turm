@@ -1,6 +1,6 @@
 turm|80-column dumb tty,
 	am,
-	colors#8,
+	colors#256,
 	cols#80,
 	bel=^G,
 	clear=\E[H\E[J,
