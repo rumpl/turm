@@ -79,6 +79,7 @@ pub enum GraphicRendition {
     ForegroundColor(Color),
     Bold,
     Reset,
+    Underline,
 }
 
 impl From<u8> for GraphicRendition {
@@ -251,6 +252,8 @@ impl Ansi {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Reset));
                                 } else if params.len() == 1 && params[0] == 1 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Bold));
+                                } else if params.len() == 1 && params[0] == 4 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Underline));
                                 } else if params.is_empty() || params[0] == 0 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
                                         Color::BLACK,

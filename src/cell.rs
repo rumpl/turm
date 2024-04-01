@@ -5,6 +5,7 @@ pub struct Style {
     pub fg: Color,
     pub bg: Color,
     pub bold: bool,
+    pub underline: bool,
 }
 
 impl Default for Style {
@@ -13,6 +14,7 @@ impl Default for Style {
             fg: Color::WHITE,
             bg: Color::BLACK,
             bold: false,
+            underline: false,
         }
     }
 }

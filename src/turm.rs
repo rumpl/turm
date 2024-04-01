@@ -73,6 +73,7 @@ impl Turm {
             GraphicRendition::Reset => {
                 self.current_style = Style::default();
             }
+            GraphicRendition::Underline => self.current_style.underline = true,
         };
     }
 

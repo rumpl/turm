@@ -9,7 +9,9 @@ use crate::{
     color::Color,
     turm::Turm,
 };
-use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, TextStyle};
+use egui::{
+    Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, Stroke, TextStyle,
+};
 use nix::ioctl_write_ptr_bad;
 
 ioctl_write_ptr_bad!(
@@ -248,17 +250,26 @@ impl eframe::App for TurmGui {
                 } else {
                     font_id.clone()
                 };
-                job.append(
-                    &section.text,
-                    0.0,
-                    egui::text::TextFormat {
-                        font_id: fid,
+                let underline = if section.style.underline {
+                    Stroke {
                         color: section.style.fg.into(),
-                        background: section.style.bg.into(),
-                        line_height: Some(line_height),
-                        ..Default::default()
-                    },
-                );
+                        width: 4.0,
+                    }
+                } else {
+                    Stroke {
+                        color: section.style.fg.into(),
+                        width: 0.0,
+                    }
+                };
+                let tf = egui::text::TextFormat {
+                    font_id: fid,
+                    color: section.style.fg.into(),
+                    background: section.style.bg.into(),
+                    underline,
+                    line_height: Some(line_height),
+                    ..Default::default()
+                };
+                job.append(&section.text, 0.0, tf);
             }
             let res = ui.label(job);
 
