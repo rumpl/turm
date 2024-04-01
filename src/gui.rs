@@ -29,6 +29,20 @@ pub struct TurmGui {
 
 impl TurmGui {
     pub fn new(cc: &eframe::CreationContext<'_>, fd: OwnedFd) -> Self {
+        let mut fonts = egui::FontDefinitions::default();
+        fonts.font_data.insert(
+            "berkeley".to_owned(),
+            egui::FontData::from_static(include_bytes!(
+                "/home/rumpl/.local/share/fonts/BerkeleyMono-Regular.ttf"
+            )),
+        );
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .insert(0, "berkeley".to_owned());
+        cc.egui_ctx.set_fonts(fonts);
+
         cc.egui_ctx.style_mut(|style| {
             style.override_text_style = Some(TextStyle::Monospace);
             for (_text_style, font_id) in style.text_styles.iter_mut() {
