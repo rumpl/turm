@@ -5,6 +5,7 @@ use gui::TurmGui;
 mod ansi;
 mod ansi_codes;
 mod cell;
+mod color;
 mod grid;
 mod gui;
 mod row;

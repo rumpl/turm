@@ -3,7 +3,8 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use crate::{ansi::Color, row::Row};
+use crate::color::Color;
+use crate::row::Row;
 
 #[derive(Debug)]
 pub struct Grid {

@@ -5,7 +5,8 @@ use std::{
 };
 
 use crate::{
-    ansi::{Ansi, AnsiOutput, Color},
+    ansi::{Ansi, AnsiOutput},
+    color::Color,
     turm::Turm,
 };
 use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, TextStyle};

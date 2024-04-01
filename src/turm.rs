@@ -1,7 +1,4 @@
-use crate::{
-    ansi::{Color, GraphicRendition},
-    grid::Grid,
-};
+use crate::{ansi::GraphicRendition, color::Color, grid::Grid};
 
 #[derive(Debug, Default)]
 pub struct CursorPos {
