@@ -126,31 +126,31 @@ impl From<u8> for GraphicRendition {
     }
 }
 
-fn color_8bit(item: u8) -> GraphicRendition {
+fn color_8bit(item: u8) -> Color {
     match item {
-        0 => GraphicRendition::ForegroundColor(Color::BLACK),
-        1 => GraphicRendition::ForegroundColor(Color::RED),
-        2 => GraphicRendition::ForegroundColor(Color::GREEN),
-        3 => GraphicRendition::ForegroundColor(Color::YELLOW),
-        4 => GraphicRendition::ForegroundColor(Color::BLUE),
-        5 => GraphicRendition::ForegroundColor(Color::MAGENTA),
-        6 => GraphicRendition::ForegroundColor(Color::CYAN),
-        7 => GraphicRendition::ForegroundColor(Color::WHITE),
+        0 => Color::BLACK,
+        1 => Color::RED,
+        2 => Color::GREEN,
+        3 => Color::YELLOW,
+        4 => Color::BLUE,
+        5 => Color::MAGENTA,
+        6 => Color::CYAN,
+        7 => Color::WHITE,
 
-        8 => GraphicRendition::ForegroundColor(Color::GRAY),
-        9 => GraphicRendition::ForegroundColor(Color::RED),
-        10 => GraphicRendition::ForegroundColor(Color::GREEN),
-        11 => GraphicRendition::ForegroundColor(Color::YELLOW),
-        12 => GraphicRendition::ForegroundColor(Color::BLUE),
-        13 => GraphicRendition::ForegroundColor(Color::MAGENTA),
-        14 => GraphicRendition::ForegroundColor(Color::CYAN),
-        15 => GraphicRendition::ForegroundColor(Color::WHITE),
+        8 => Color::GRAY,
+        9 => Color::RED,
+        10 => Color::GREEN,
+        11 => Color::YELLOW,
+        12 => Color::BLUE,
+        13 => Color::MAGENTA,
+        14 => Color::CYAN,
+        15 => Color::WHITE,
 
-        16..=231 => GraphicRendition::ForegroundColor(Color::from_rgb(
+        16..=231 => Color::from_rgb(
             (item - 16) & 0b1110_0000,
             (item - 16) & 0b0001_1100,
             (item - 16) & 0b0000_0011,
-        )),
+        ),
         _ => panic!("unknown sgr {}", item),
     }
 }
@@ -253,7 +253,9 @@ impl Ansi {
                                         Color::WHITE,
                                     )));
                                 } else if params.len() >= 3 && params[0] == 38 && params[1] == 5 {
-                                    res.push(AnsiOutput::Sgr(color_8bit(params[2] as u8)));
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
+                                        color_8bit(params[2] as u8),
+                                    )));
                                 } else {
                                     for param in params {
                                         // TODO: ugly hack to only take the color for now until we
