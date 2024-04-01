@@ -14,7 +14,7 @@ pub struct Cursor {
 #[derive(Debug)]
 pub struct Turm {
     pub cursor: Cursor,
-    current_color: Color,
+    current_fg_color: Color,
     current_bg_color: Color,
     pub grid: Grid,
     lines: usize,
@@ -26,7 +26,7 @@ impl Turm {
         Self {
             cursor: Cursor::default(),
             grid: Grid::new(columns, lines),
-            current_color: Color::WHITE,
+            current_fg_color: Color::WHITE,
             current_bg_color: Color::BLACK,
             lines,
             columns,
@@ -40,7 +40,7 @@ impl Turm {
             self.move_cursor(0, self.cursor.pos.y);
         } else {
             self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;
-            self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = self.current_color;
+            self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = self.current_fg_color;
             self.grid[self.cursor.pos.y][self.cursor.pos.x].bg = self.current_bg_color;
             self.move_cursor(self.cursor.pos.x + 1, self.cursor.pos.y);
         }
@@ -65,7 +65,7 @@ impl Turm {
         match c {
             GraphicRendition::ForegroundColor(c) => {
                 self.grid[self.cursor.pos.y][self.cursor.pos.x].fg = c;
-                self.current_color = c;
+                self.current_fg_color = c;
             }
             GraphicRendition::BackgroundColor(c) => {
                 self.grid[self.cursor.pos.y][self.cursor.pos.x].bg = c;
