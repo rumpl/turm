@@ -256,6 +256,10 @@ impl Ansi {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
                                         color_8bit(params[2] as u8),
                                     )));
+                                } else if params.len() >= 3 && params[0] == 48 && params[1] == 5 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
+                                        color_8bit(params[2] as u8),
+                                    )));
                                 } else {
                                     for param in params {
                                         // TODO: ugly hack to only take the color for now until we
