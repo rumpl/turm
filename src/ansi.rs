@@ -63,10 +63,35 @@ impl CSIParser {
     }
 }
 
+struct OscParseResult {}
+
+#[derive(Debug)]
+enum OscParserError {
+    InvalidOsc,
+}
+
+#[derive(Debug)]
+struct OscParser {}
+
+impl OscParser {
+    fn new() -> Self {
+        Self {}
+    }
+
+    fn push(&mut self, b: u8) -> Option<Result<OscParseResult, OscParserError>> {
+        if b == ansi_codes::STRING_TERMINATOR {
+            return Some(Ok(OscParseResult {}));
+        }
+
+        None
+    }
+}
+
 enum AnsiState {
     Empty,
     Escape,
     Csi(CSIParser),
+    Osc(OscParser),
 }
 
 pub struct Ansi {
@@ -234,12 +259,17 @@ impl Ansi {
                         ansi_codes::ESC_START => {
                             self.state = AnsiState::Csi(CSIParser::new());
                         }
+                        ansi_codes::OSC_START => {
+                            self.state = AnsiState::Osc(OscParser::new());
+                        }
                         ansi_codes::SCROLL_REVERSE => {
                             res.push(AnsiOutput::ScrollDown);
                             self.state = AnsiState::Empty;
                         }
                         _ => {
-                            println!("unknown ansi {b} {:#02x}", b);
+                            let first = (b & 0b0111_0000) >> 4;
+                            let second = b & 0b0000_1111;
+                            println!("unknown ansi {} {:#02x} {first}/{second}", *b as char, b);
                         }
                     }
                 }
@@ -271,6 +301,22 @@ impl Ansi {
                                 } else if params.len() >= 3 && params[0] == 48 && params[1] == 5 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
                                         color_8bit(params[2] as u8),
+                                    )));
+                                } else if params.len() >= 3 && params[0] == 38 && params[1] == 2 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
+                                        Color::from_rgb(
+                                            params[2] as u8,
+                                            params[3] as u8,
+                                            params[4] as u8,
+                                        ),
+                                    )));
+                                } else if params.len() >= 3 && params[0] == 48 && params[1] == 2 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
+                                        Color::from_rgb(
+                                            params[2] as u8,
+                                            params[3] as u8,
+                                            params[4] as u8,
+                                        ),
                                     )));
                                 } else {
                                     for param in params {
@@ -323,7 +369,12 @@ impl Ansi {
                             ansi_codes::HIDE_CURSOR => res.push(AnsiOutput::HideCursor),
                             ansi_codes::SHOW_CURSOR => res.push(AnsiOutput::ShowCursor),
                             _ => {
-                                println!("unknown func {} {}", d.func, d.func as char);
+                                let first = (d.func & 0b0111_0000) >> 4;
+                                let second = d.func & 0b0000_1111;
+                                println!(
+                                    "unknown func {} {} {first}/{second}",
+                                    d.func, d.func as char
+                                );
                             }
                         }
                         self.state = AnsiState::Empty;
@@ -333,6 +384,16 @@ impl Ansi {
                     }
                     _ => {} // CSI not finished, nothing to do
                 },
+                AnsiState::Osc(parser) => {
+                    match parser.push(*b) {
+                        Some(_) => {
+                            println!("parsed")
+                        }
+                        _ => {} // osc not finished parsing, do nothing
+                    }
+                    self.state = AnsiState::Empty;
+                    println!("parser osc");
+                }
             }
         }
 

@@ -21,7 +21,6 @@ ioctl_write_ptr_bad!(
 );
 
 pub struct TurmGui {
-    buf: Vec<AnsiOutput>,
     turm: Turm,
     ansi: Ansi,
     rx: Receiver<Vec<u8>>,
@@ -115,7 +114,6 @@ impl TurmGui {
         Self {
             rx,
             rtx,
-            buf: vec![],
             ansi: Ansi::new(),
             // TODO: calculate the right initial number of rows and columns
             turm: Turm::new(cols, rows),
@@ -178,16 +176,11 @@ impl TurmGui {
             }
         }
     }
-}
 
-impl eframe::App for TurmGui {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let font_size = 14.0;
-        let line_height = font_size + 6.0;
-
+    fn handle_input(&mut self) {
         let ret = self.rx.try_recv();
         if let Ok(buf) = ret {
-            let mut ansi_res = self.ansi.push(&buf);
+            let ansi_res = self.ansi.push(&buf);
             for q in &ansi_res {
                 match q {
                     AnsiOutput::Text(str) => {
@@ -226,8 +219,16 @@ impl eframe::App for TurmGui {
                     AnsiOutput::Bell => println!("DING DONG"),
                 }
             }
-            self.buf.append(&mut ansi_res);
         };
+    }
+}
+
+impl eframe::App for TurmGui {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let font_size = 14.0;
+        let line_height = font_size + 3.0;
+
+        self.handle_input();
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.input(|input_state| {
@@ -250,17 +251,12 @@ impl eframe::App for TurmGui {
                 } else {
                     font_id.clone()
                 };
-                let underline = if section.style.underline {
-                    Stroke {
-                        color: section.style.fg.into(),
-                        width: 4.0,
-                    }
-                } else {
-                    Stroke {
-                        color: section.style.fg.into(),
-                        width: 0.0,
-                    }
+
+                let underline = Stroke {
+                    color: section.style.fg.into(),
+                    width: if section.style.underline { 4.0 } else { 0.0 },
                 };
+
                 let tf = egui::text::TextFormat {
                     font_id: fid,
                     color: section.style.fg.into(),
@@ -272,6 +268,7 @@ impl eframe::App for TurmGui {
                 };
                 job.append(&section.text, 0.0, tf);
             }
+
             let res = ui.label(job);
 
             if self.show_cursor {
