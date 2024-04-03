@@ -20,6 +20,11 @@ ioctl_write_ptr_bad!(
     nix::pty::Winsize
 );
 
+unsafe fn set_nonblocking(fd: i32) {
+    use libc::{fcntl, F_GETFL, F_SETFL, O_NONBLOCK};
+    let _ = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+}
+
 pub struct TurmGui {
     turm: Turm,
     ansi: Ansi,
@@ -87,19 +92,38 @@ impl TurmGui {
 
         let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(0);
         let rs = cc.egui_ctx.clone();
-        let fd2 = fd.try_clone().unwrap();
+        let write_fd = fd.try_clone().unwrap();
         // Thread that reads output from the shell and sends it to the gui
-        thread::spawn(move || loop {
-            let mut buf = vec![0u8; 4096];
+        thread::spawn(move || {
+            unsafe {
+                set_nonblocking(fd.as_raw_fd());
+            }
+            let poller = polling::Poller::new().unwrap();
+            unsafe {
+                poller
+                    .add(fd.as_raw_fd(), polling::Event::readable(7))
+                    .unwrap();
+            }
 
-            let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
-            if let Ok(s) = ret {
-                if s != 0 {
-                    rs.request_repaint();
-                    let _ = tx.send(buf[0..s].to_vec());
+            let mut events = polling::Events::new();
+            loop {
+                let mut final_buf: Vec<u8> = vec![];
+                let mut buf = vec![0u8; 4096];
+                events.clear();
+                poller.wait(&mut events, None).unwrap();
+                let mut read = 0;
+                for _i in 0..10 {
+                    let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
+                    if let Ok(s) = ret {
+                        if s != 0 {
+                            final_buf.append(&mut Vec::from(&mut buf[0..s]));
+                            read += s;
+                        }
+                    }
                 }
-            } else {
                 rs.request_repaint();
+                let _ = tx.send(final_buf[0..read].to_vec());
+                poller.modify(&fd, polling::Event::readable(7)).unwrap();
             }
         });
 
@@ -107,7 +131,7 @@ impl TurmGui {
         // Thread that gets user input and sends it to the shell
         thread::spawn(move || loop {
             if let Ok(input) = rrx.recv() {
-                let _ret = nix::unistd::write(fd2.as_raw_fd(), &input);
+                let _ret = nix::unistd::write(write_fd.as_raw_fd(), &input);
             }
         });
 

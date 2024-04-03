@@ -283,7 +283,7 @@ dependencies = [
  "futures-io",
  "futures-lite 2.2.0",
  "parking",
- "polling 3.4.0",
+ "polling 3.6.0",
  "rustix 0.38.31",
  "slab",
  "tracing",
@@ -581,7 +581,7 @@ checksum = "fba7adb4dd5aa98e5553510223000e7148f621165ec5f9acd7113f6ca4995298"
 dependencies = [
  "bitflags 2.4.2",
  "log",
- "polling 3.4.0",
+ "polling 3.6.0",
  "rustix 0.38.31",
  "slab",
  "thiserror",
@@ -1442,9 +1442,9 @@ dependencies = [
 
 [[package]]
 name = "hermit-abi"
-version = "0.3.6"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd5256b483761cd23699d0da46cc6fd2ee3be420bbe6d020ae4a091e70b7e9fd"
+checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
 name = "hex"
@@ -2058,12 +2058,13 @@ dependencies = [
 
 [[package]]
 name = "polling"
-version = "3.4.0"
+version = "3.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30054e72317ab98eddd8561db0f6524df3367636884b7b21b703e4b280a84a14"
+checksum = "e0c976a60b2d7e99d6f229e414670a9b85d13ac305cc6d1e9c134de58c5aaaf6"
 dependencies = [
  "cfg-if",
  "concurrent-queue",
+ "hermit-abi",
  "pin-project-lite",
  "rustix 0.38.31",
  "tracing",
@@ -2627,7 +2628,9 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
+ "libc",
  "nix 0.27.1",
+ "polling 3.6.0",
 ]
 
 [[package]]
