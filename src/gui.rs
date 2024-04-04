@@ -325,7 +325,9 @@ impl eframe::App for TurmGui {
                 let painter = ui.painter();
                 let pos = egui::pos2(
                     (self.turm.cursor.pos.x as f32) * width + res.rect.left(),
-                    (self.turm.cursor.pos.y as f32) * line_height + res.rect.top(),
+                    (self.turm.cursor.pos.y as f32) * line_height
+                        + (self.turm.cursor.pos.y as f32) * (-0.15)
+                        + res.rect.top(),
                 );
                 let size = egui::vec2(width, font_size);
                 painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
