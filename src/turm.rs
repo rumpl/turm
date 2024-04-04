@@ -37,7 +37,6 @@ impl Turm {
             return;
         } else if c == b'\r' {
             self.move_cursor(0, self.cursor.pos.y);
-            return;
         } else {
             if self.cursor.pos.x + 1 > self.columns {
                 self.move_cursor(0, self.cursor.pos.y + 1);
