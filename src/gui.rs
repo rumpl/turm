@@ -2,6 +2,7 @@ use std::{
     os::fd::{AsRawFd, OwnedFd},
     sync::mpsc::{self, Receiver, Sender},
     thread,
+    time::Duration,
 };
 
 use crate::{
@@ -106,24 +107,44 @@ impl TurmGui {
             }
 
             let mut events = polling::Events::new();
+            let timeout = Duration::new(0, 10_000_000); // 10ms
+
             loop {
                 let mut final_buf: Vec<u8> = vec![];
-                let mut buf = vec![0u8; 4096];
+                let mut buf = vec![0u8; 1024];
+
                 events.clear();
-                poller.wait(&mut events, None).unwrap();
+
+                poller.wait(&mut events, Some(timeout)).unwrap();
+                // Immediately tell the poller that we are still interested in these events
+                poller.modify(&fd, polling::Event::readable(7)).unwrap();
+
                 let mut read = 0;
-                for _i in 0..10 {
-                    let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
-                    if let Ok(s) = ret {
-                        if s != 0 {
-                            final_buf.append(&mut Vec::from(&mut buf[0..s]));
-                            read += s;
+                // For some reason on MacOS this thing only returns data on the first read,
+                // resulting in messages being sent in 1024 byte chunks, this makes redraw slow on
+                // heavy UI applications like neovim, this works fine on Linux though.
+                for _ in events.iter() {
+                    for _ in 0..30 {
+                        thread::sleep(Duration::new(0, 1_000));
+                        let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
+                        //println!("{:?}", ret);
+                        if let Ok(s) = ret {
+                            //println!("read {s} bytes");
+                            if s != 0 {
+                                final_buf.append(&mut Vec::from(&mut buf[0..s]));
+                                read += s;
+                            } else {
+                                //println!("done");
+                                break;
+                            }
                         }
                     }
+
+                    rs.request_repaint();
+
+                    //println!("read completely {read} bytes");
+                    let _ = tx.send(final_buf[0..read].to_vec());
                 }
-                rs.request_repaint();
-                let _ = tx.send(final_buf[0..read].to_vec());
-                poller.modify(&fd, polling::Event::readable(7)).unwrap();
             }
         });
 

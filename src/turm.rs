@@ -34,12 +34,19 @@ impl Turm {
     pub fn input(&mut self, c: u8) {
         if c == b'\n' {
             self.move_cursor(self.cursor.pos.x, self.cursor.pos.y + 1);
+            return;
         } else if c == b'\r' {
             self.move_cursor(0, self.cursor.pos.y);
             return;
         } else {
             if self.cursor.pos.x + 1 > self.columns {
                 self.move_cursor(0, self.cursor.pos.y + 1);
+            }
+            if self.cursor.pos.y == self.lines {
+                self.move_cursor(0, self.lines - 1);
+                if c != 32 {
+                    self.scroll_up();
+                }
             }
             self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;
             self.grid[self.cursor.pos.y][self.cursor.pos.x].style = self.current_style;
@@ -64,9 +71,12 @@ impl Turm {
             self.move_cursor(0, self.cursor.pos.y + 1);
         }
         if self.cursor.pos.y == self.lines {
-            self.move_cursor(0, self.lines - 1);
-            self.scroll_up();
+            return;
         }
+        //if self.cursor.pos.y == self.lines {
+        //    self.move_cursor(0, self.lines - 1);
+        //    self.scroll_up();
+        //}
         match c {
             GraphicRendition::ForegroundColor(c) => {
                 self.grid[self.cursor.pos.y][self.cursor.pos.x].style.fg = c;
