@@ -127,14 +127,11 @@ impl TurmGui {
                     for _ in 0..30 {
                         thread::sleep(Duration::new(0, 1_000));
                         let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
-                        //println!("{:?}", ret);
                         if let Ok(s) = ret {
-                            //println!("read {s} bytes");
                             if s != 0 {
                                 final_buf.append(&mut Vec::from(&mut buf[0..s]));
                                 read += s;
                             } else {
-                                //println!("done");
                                 break;
                             }
                         }
@@ -142,7 +139,6 @@ impl TurmGui {
 
                     rs.request_repaint();
 
-                    //println!("read completely {read} bytes");
                     let _ = tx.send(final_buf[0..read].to_vec());
                 }
             }
