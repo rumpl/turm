@@ -175,7 +175,7 @@ impl TurmGui {
                     key: Key::Enter,
                     pressed: true,
                     ..
-                } => Some("\n"),
+                } => Some("\r\n"),
                 Event::Key {
                     key: Key::ArrowUp,
                     pressed: true,
