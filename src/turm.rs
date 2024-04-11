@@ -14,6 +14,7 @@ pub struct Cursor {
 #[derive(Debug)]
 pub struct Turm {
     pub cursor: Cursor,
+    pub show_cursor: bool,
     pub grid: Grid,
 
     current_style: Style,
@@ -31,6 +32,7 @@ impl Turm {
             lines,
             columns,
             needs_wrap: false,
+            show_cursor: true,
         }
     }
 
@@ -51,6 +53,10 @@ impl Turm {
 
             if self.cursor.pos.x + 1 > self.columns {
                 self.move_cursor(0, self.cursor.pos.y + 1);
+                if self.cursor.pos.y == self.lines {
+                    self.move_cursor(0, self.lines - 1);
+                    self.scroll_up();
+                }
             }
 
             self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;

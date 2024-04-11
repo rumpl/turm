@@ -1,6 +1,10 @@
 use std::{
+    ops::DerefMut,
     os::fd::{AsRawFd, OwnedFd},
-    sync::mpsc::{self, Receiver, Sender},
+    sync::{
+        mpsc::{self, Sender},
+        Arc, Mutex,
+    },
     thread,
     time::Duration,
 };
@@ -27,11 +31,8 @@ unsafe fn set_nonblocking(fd: i32) {
 }
 
 pub struct TurmGui {
-    turm: Turm,
-    ansi: Ansi,
-    rx: Receiver<Vec<u8>>,
     rtx: Sender<Vec<u8>>,
-    show_cursor: bool,
+    turm: Arc<Mutex<Turm>>,
 }
 
 impl TurmGui {
@@ -91,11 +92,14 @@ impl TurmGui {
             let _ = set_window_size_ioctl(fd.as_raw_fd(), &ws);
         }
 
-        let (tx, rx) = mpsc::sync_channel::<Vec<u8>>(0);
         let rs = cc.egui_ctx.clone();
         let write_fd = fd.try_clone().unwrap();
+        let turmie = Arc::new(Mutex::new(Turm::new(cols, rows)));
         // Thread that reads output from the shell and sends it to the gui
+        let turm = turmie.clone();
         thread::spawn(move || {
+            let mut ansi = Ansi::new();
+
             unsafe {
                 set_nonblocking(fd.as_raw_fd());
             }
@@ -119,27 +123,69 @@ impl TurmGui {
                 // Immediately tell the poller that we are still interested in these events
                 poller.modify(&fd, polling::Event::readable(7)).unwrap();
 
-                let mut read = 0;
                 // For some reason on MacOS this thing only returns data on the first read,
                 // resulting in messages being sent in 1024 byte chunks, this makes redraw slow on
                 // heavy UI applications like neovim, this works fine on Linux though.
                 for _ in events.iter() {
                     for _ in 0..30 {
+                        let mut turm1 = turm.lock().unwrap();
+                        let turm = turm1.deref_mut();
                         thread::sleep(Duration::new(0, 1_000));
                         let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
                         if let Ok(s) = ret {
                             if s != 0 {
+                                let ansi_res = ansi.push(&buf[0..s]);
+                                for q in &ansi_res {
+                                    match q {
+                                        AnsiOutput::Text(str) => {
+                                            for c in str {
+                                                turm.input(*c);
+                                            }
+                                        }
+                                        AnsiOutput::ClearToEndOfLine(_mode) => {
+                                            turm.clear_to_end_of_line()
+                                        }
+                                        AnsiOutput::ClearToEOS => turm.clear_to_eos(),
+                                        AnsiOutput::MoveCursor(x, y) => turm.move_cursor(*x, *y),
+                                        AnsiOutput::MoveCursorHorizontal(x) => {
+                                            turm.move_cursor(*x, turm.cursor.pos.y)
+                                        }
+                                        AnsiOutput::CursorUp(amount) => turm.move_cursor(
+                                            turm.cursor.pos.x,
+                                            turm.cursor.pos.y - amount,
+                                        ),
+                                        AnsiOutput::CursorDown(amount) => turm.move_cursor(
+                                            turm.cursor.pos.x,
+                                            turm.cursor.pos.y + amount,
+                                        ),
+                                        AnsiOutput::CursorForward(amount) => turm.move_cursor(
+                                            turm.cursor.pos.x + amount,
+                                            turm.cursor.pos.y,
+                                        ),
+                                        AnsiOutput::CursorBackward(amount) => {
+                                            if amount <= &turm.cursor.pos.x {
+                                                turm.move_cursor(
+                                                    turm.cursor.pos.x - amount,
+                                                    turm.cursor.pos.y,
+                                                );
+                                            }
+                                        }
+                                        AnsiOutput::HideCursor => turm.show_cursor = false,
+                                        AnsiOutput::ShowCursor => turm.show_cursor = true,
+                                        AnsiOutput::ScrollDown => turm.scroll_down(),
+                                        AnsiOutput::Backspace => turm.backspace(),
+                                        AnsiOutput::Sgr(c) => turm.color(*c),
+                                        AnsiOutput::Bell => println!("DING DONG"),
+                                    }
+                                }
                                 final_buf.append(&mut Vec::from(&mut buf[0..s]));
-                                read += s;
                             } else {
                                 break;
                             }
                         }
+                        drop(turm1);
+                        rs.request_repaint();
                     }
-
-                    rs.request_repaint();
-
-                    let _ = tx.send(final_buf[0..read].to_vec());
                 }
             }
         });
@@ -153,12 +199,8 @@ impl TurmGui {
         });
 
         Self {
-            rx,
             rtx,
-            ansi: Ansi::new(),
-            // TODO: calculate the right initial number of rows and columns
-            turm: Turm::new(cols, rows),
-            show_cursor: true,
+            turm: turmie.clone(),
         }
     }
 
@@ -217,59 +259,12 @@ impl TurmGui {
             }
         }
     }
-
-    fn handle_input(&mut self) {
-        let ret = self.rx.try_recv();
-        if let Ok(buf) = ret {
-            let ansi_res = self.ansi.push(&buf);
-            for q in &ansi_res {
-                match q {
-                    AnsiOutput::Text(str) => {
-                        for c in str {
-                            self.turm.input(*c);
-                        }
-                    }
-                    AnsiOutput::ClearToEndOfLine(_mode) => self.turm.clear_to_end_of_line(),
-                    AnsiOutput::ClearToEOS => self.turm.clear_to_eos(),
-                    AnsiOutput::MoveCursor(x, y) => self.turm.move_cursor(*x, *y),
-                    AnsiOutput::MoveCursorHorizontal(x) => {
-                        self.turm.move_cursor(*x, self.turm.cursor.pos.y)
-                    }
-                    AnsiOutput::CursorUp(amount) => self
-                        .turm
-                        .move_cursor(self.turm.cursor.pos.x, self.turm.cursor.pos.y - amount),
-                    AnsiOutput::CursorDown(amount) => self
-                        .turm
-                        .move_cursor(self.turm.cursor.pos.x, self.turm.cursor.pos.y + amount),
-                    AnsiOutput::CursorForward(amount) => self
-                        .turm
-                        .move_cursor(self.turm.cursor.pos.x + amount, self.turm.cursor.pos.y),
-                    AnsiOutput::CursorBackward(amount) => {
-                        if amount <= &self.turm.cursor.pos.x {
-                            self.turm.move_cursor(
-                                self.turm.cursor.pos.x - amount,
-                                self.turm.cursor.pos.y,
-                            );
-                        }
-                    }
-                    AnsiOutput::HideCursor => self.show_cursor = false,
-                    AnsiOutput::ShowCursor => self.show_cursor = true,
-                    AnsiOutput::ScrollDown => self.turm.scroll_down(),
-                    AnsiOutput::Backspace => self.turm.backspace(),
-                    AnsiOutput::Sgr(c) => self.turm.color(*c),
-                    AnsiOutput::Bell => println!("DING DONG"),
-                }
-            }
-        };
-    }
 }
 
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let font_size = 14.0;
         let line_height = font_size + 3.0;
-
-        self.handle_input();
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.input(|input_state| {
@@ -286,7 +281,9 @@ impl eframe::App for TurmGui {
             };
 
             let mut job = egui::text::LayoutJob::default();
-            for section in self.turm.grid.sections() {
+            let mut turm1 = self.turm.lock().unwrap();
+            let turm = turm1.deref_mut();
+            for section in turm.grid.sections() {
                 let fid = if section.style.bold {
                     bold_font_id.clone()
                 } else {
@@ -312,7 +309,7 @@ impl eframe::App for TurmGui {
 
             let res = ui.label(job);
 
-            if self.show_cursor {
+            if turm.show_cursor {
                 let mut width = 0.0;
                 ctx.fonts(|font| {
                     width = font.glyph_width(&font_id, 'm');
@@ -320,14 +317,15 @@ impl eframe::App for TurmGui {
 
                 let painter = ui.painter();
                 let pos = egui::pos2(
-                    (self.turm.cursor.pos.x as f32) * width + res.rect.left(),
-                    (self.turm.cursor.pos.y as f32) * line_height
-                        + (self.turm.cursor.pos.y as f32) * (-0.15)
+                    (turm.cursor.pos.x as f32) * width + res.rect.left(),
+                    (turm.cursor.pos.y as f32) * line_height
+                        + (turm.cursor.pos.y as f32) * (-0.15)
                         + res.rect.top(),
                 );
                 let size = egui::vec2(width, font_size);
                 painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
             }
+            drop(turm1);
         });
     }
 }
