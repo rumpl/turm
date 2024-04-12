@@ -1,5 +1,6 @@
-use crate::ansi_codes;
 use crate::color::Color;
+
+mod ansi_codes;
 
 fn is_csi_terminator(b: u8) -> bool {
     (0x40..=0x7e).contains(&b)

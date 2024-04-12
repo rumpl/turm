@@ -12,7 +12,6 @@ use terminal_io::TerminalIO;
 use turm::Turm;
 
 mod ansi;
-mod ansi_codes;
 mod color;
 mod font;
 mod grid;
