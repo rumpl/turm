@@ -2,11 +2,13 @@ use std::sync::mpsc::Sender;
 
 use egui::{Event, InputState, Key, Modifiers};
 
-pub struct TerminalInput {
+/// TerminalInput processes the input from the GUI and sends it back to the
+/// child terminal.
+pub struct TerminalGuiInput {
     rtx: Sender<Vec<u8>>,
 }
 
-impl TerminalInput {
+impl TerminalGuiInput {
     pub fn new(rtx: Sender<Vec<u8>>) -> Self {
         Self { rtx }
     }

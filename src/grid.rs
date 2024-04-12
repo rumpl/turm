@@ -43,7 +43,9 @@ impl Grid {
         for i in (1..len).rev() {
             self.rows.swap(i - 1, i);
         }
-        self.rows[0] = self.scrollback.pop().unwrap();
+        if !self.scrollback.is_empty() {
+            self.rows[0] = self.scrollback.pop().unwrap();
+        }
     }
 
     pub fn sections(&self) -> Vec<TextSection> {

@@ -1,3 +1,5 @@
+use egui::Color32;
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct Color(pub [u8; 3]);
 
@@ -29,5 +31,11 @@ impl Color {
 
     pub const fn from_rgb(r: u8, g: u8, b: u8) -> Self {
         Self([r, g, b])
+    }
+}
+
+impl From<Color> for Color32 {
+    fn from(c: Color) -> Self {
+        Self::from_rgb(c.0[0], c.0[1], c.0[2])
     }
 }

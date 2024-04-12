@@ -1,6 +1,15 @@
-use std::ffi::CStr;
+use std::{
+    ffi::CStr,
+    os::fd::AsRawFd,
+    sync::{mpsc, Arc, Mutex},
+    thread,
+};
 
+use ansi::Ansi;
 use gui::TurmGui;
+use terminal_gui_input::TerminalGuiInput;
+use terminal_io::TerminalIO;
+use turm::Turm;
 
 mod ansi;
 mod ansi_codes;
@@ -10,7 +19,8 @@ mod font;
 mod grid;
 mod gui;
 mod row;
-mod terminal_input;
+mod terminal_gui_input;
+mod terminal_io;
 mod turm;
 
 fn main() {
@@ -32,7 +42,46 @@ fn main() {
             _ = eframe::run_native(
                 "💩 Turm 💩",
                 options,
-                Box::new(|cc| Box::<TurmGui>::new(TurmGui::new(cc, result.master))),
+                Box::new(|cc| {
+                    let fd = result.master;
+
+                    let cols: usize = 150;
+                    let rows: usize = 40;
+
+                    let rs = cc.egui_ctx.clone();
+
+                    let write_fd = fd.try_clone().unwrap();
+                    let read_fd = fd.try_clone().unwrap();
+
+                    let turm_arc = Arc::new(Mutex::new(Turm::new(cols, rows)));
+
+                    let turm = turm_arc.clone();
+                    // Thread that reads output from the shell and sends it to the gui
+                    thread::spawn(move || {
+                        let ansi = Ansi::new();
+                        let mut terminal_io = TerminalIO::new(ansi, read_fd, turm);
+                        terminal_io.start_io(|| {
+                            rs.request_repaint();
+                        });
+                    });
+
+                    let (rtx, rrx) = mpsc::channel::<Vec<u8>>();
+                    // Thread that gets user input and sends it to the shell
+                    thread::spawn(move || loop {
+                        if let Ok(input) = rrx.recv() {
+                            _ = nix::unistd::write(write_fd.as_raw_fd(), &input);
+                        }
+                    });
+
+                    Box::<TurmGui>::new(TurmGui::new(
+                        cc,
+                        fd.as_raw_fd(),
+                        turm_arc,
+                        TerminalGuiInput::new(rtx),
+                        cols,
+                        rows,
+                    ))
+                }),
             );
         }
         nix::unistd::ForkResult::Child => {
