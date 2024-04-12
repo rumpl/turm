@@ -6,6 +6,7 @@ mod ansi;
 mod ansi_codes;
 mod cell;
 mod color;
+mod font;
 mod grid;
 mod gui;
 mod row;

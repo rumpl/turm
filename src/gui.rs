@@ -9,14 +9,8 @@ use std::{
     time::Duration,
 };
 
-use crate::{
-    ansi::{Ansi, AnsiOutput},
-    color::Color,
-    turm::Turm,
-};
-use egui::{
-    Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, Stroke, TextStyle,
-};
+use crate::{ansi::Ansi, color::Color, font, turm::Turm};
+use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, Stroke};
 use nix::ioctl_write_ptr_bad;
 
 ioctl_write_ptr_bad!(
@@ -37,49 +31,10 @@ pub struct TurmGui {
 
 impl TurmGui {
     pub fn new(cc: &eframe::CreationContext<'_>, fd: OwnedFd) -> Self {
-        let mut fonts = egui::FontDefinitions::default();
+        cc.egui_ctx.set_fonts(font::load());
 
-        fonts.font_data.insert(
-            "berkeley".to_owned(),
-            egui::FontData::from_static(include_bytes!(
-                "/home/rumpl/.local/share/fonts/BerkeleyMono-Regular.ttf"
-            )),
-        );
-
-        fonts.font_data.insert(
-            "berkeley-bold".to_owned(),
-            egui::FontData::from_static(include_bytes!(
-                "/home/rumpl/.local/share/fonts/BerkeleyMono-Bold.ttf"
-            )),
-        );
-
-        fonts
-            .families
-            .entry(egui::FontFamily::Monospace)
-            .or_default()
-            .insert(0, "berkeley".to_owned());
-
-        fonts.families.insert(
-            FontFamily::Name("berkeley".into()),
-            vec!["berkeley".to_owned()],
-        );
-
-        fonts.families.insert(
-            FontFamily::Name("berkeley-bold".into()),
-            vec!["berkeley-bold".to_owned()],
-        );
-
-        cc.egui_ctx.set_fonts(fonts);
-
-        cc.egui_ctx.style_mut(|style| {
-            style.override_text_style = Some(TextStyle::Monospace);
-            for (_text_style, font_id) in style.text_styles.iter_mut() {
-                font_id.size = 24.0;
-            }
-        });
-
-        let cols: usize = 120;
-        let rows: usize = 30;
+        let cols: usize = 150;
+        let rows: usize = 40;
 
         let ws = nix::pty::Winsize {
             ws_col: cols as u16,
@@ -94,7 +49,9 @@ impl TurmGui {
 
         let rs = cc.egui_ctx.clone();
         let write_fd = fd.try_clone().unwrap();
+
         let turmie = Arc::new(Mutex::new(Turm::new(cols, rows)));
+
         // Thread that reads output from the shell and sends it to the gui
         let turm = turmie.clone();
         thread::spawn(move || {
@@ -119,9 +76,6 @@ impl TurmGui {
                 events.clear();
 
                 poller.wait(&mut events, Some(timeout)).unwrap();
-
-                // Immediately tell the poller that we are still interested in these events
-                poller.modify(&fd, polling::Event::readable(7)).unwrap();
 
                 // For some reason on MacOS this thing only returns data on the first read,
                 // resulting in messages being sent in 1024 byte chunks, this makes redraw slow on
@@ -150,6 +104,8 @@ impl TurmGui {
                 }
 
                 drop(turm1);
+
+                poller.modify(&fd, polling::Event::readable(7)).unwrap();
             }
         });
 
@@ -157,7 +113,7 @@ impl TurmGui {
         // Thread that gets user input and sends it to the shell
         thread::spawn(move || loop {
             if let Ok(input) = rrx.recv() {
-                let _ret = nix::unistd::write(write_fd.as_raw_fd(), &input);
+                _ = nix::unistd::write(write_fd.as_raw_fd(), &input);
             }
         });
 
