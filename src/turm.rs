@@ -1,4 +1,8 @@
-use crate::{ansi::GraphicRendition, cell::Style, grid::Grid};
+use crate::{
+    ansi::{AnsiOutput, GraphicRendition},
+    cell::Style,
+    grid::Grid,
+};
 
 #[derive(Debug, Default)]
 pub struct CursorPos {
@@ -33,6 +37,44 @@ impl Turm {
             columns,
             needs_wrap: false,
             show_cursor: true,
+        }
+    }
+
+    pub fn parse(&mut self, ansi: Vec<AnsiOutput>) {
+        for q in &ansi {
+            match q {
+                AnsiOutput::Text(str) => {
+                    for c in str {
+                        self.input(*c);
+                    }
+                }
+                AnsiOutput::ClearToEndOfLine(_mode) => self.clear_to_end_of_line(),
+                AnsiOutput::ClearToEOS => self.clear_to_eos(),
+                AnsiOutput::MoveCursor(x, y) => self.move_cursor(*x, *y),
+                AnsiOutput::MoveCursorHorizontal(x) => self.move_cursor(*x, self.cursor.pos.y),
+                AnsiOutput::CursorUp(amount) => {
+                    if self.cursor.pos.y >= *amount {
+                        self.move_cursor(self.cursor.pos.x, self.cursor.pos.y - amount);
+                    }
+                }
+                AnsiOutput::CursorDown(amount) => {
+                    self.move_cursor(self.cursor.pos.x, self.cursor.pos.y + amount)
+                }
+                AnsiOutput::CursorForward(amount) => {
+                    self.move_cursor(self.cursor.pos.x + amount, self.cursor.pos.y)
+                }
+                AnsiOutput::CursorBackward(amount) => {
+                    if amount <= &self.cursor.pos.x {
+                        self.move_cursor(self.cursor.pos.x - amount, self.cursor.pos.y);
+                    }
+                }
+                AnsiOutput::HideCursor => self.show_cursor = false,
+                AnsiOutput::ShowCursor => self.show_cursor = true,
+                AnsiOutput::ScrollDown => self.scroll_down(),
+                AnsiOutput::Backspace => self.backspace(),
+                AnsiOutput::Sgr(c) => self.color(*c),
+                AnsiOutput::Bell => println!("DING DONG"),
+            }
         }
     }
 

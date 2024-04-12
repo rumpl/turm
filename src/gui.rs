@@ -114,79 +114,42 @@ impl TurmGui {
             let timeout = Duration::new(0, 10_000_000); // 10ms
 
             loop {
-                let mut final_buf: Vec<u8> = vec![];
                 let mut buf = vec![0u8; 1024];
 
                 events.clear();
 
                 poller.wait(&mut events, Some(timeout)).unwrap();
+
                 // Immediately tell the poller that we are still interested in these events
                 poller.modify(&fd, polling::Event::readable(7)).unwrap();
 
                 // For some reason on MacOS this thing only returns data on the first read,
                 // resulting in messages being sent in 1024 byte chunks, this makes redraw slow on
                 // heavy UI applications like neovim, this works fine on Linux though.
+                let mut turm1 = turm.lock().unwrap();
+                let turm = turm1.deref_mut();
+
                 for _ in events.iter() {
                     for _ in 0..30 {
-                        let mut turm1 = turm.lock().unwrap();
-                        let turm = turm1.deref_mut();
                         thread::sleep(Duration::new(0, 1_000));
+
                         let ret = nix::unistd::read(fd.as_raw_fd(), &mut buf);
                         if let Ok(s) = ret {
                             if s != 0 {
                                 let ansi_res = ansi.push(&buf[0..s]);
-                                for q in &ansi_res {
-                                    match q {
-                                        AnsiOutput::Text(str) => {
-                                            for c in str {
-                                                turm.input(*c);
-                                            }
-                                        }
-                                        AnsiOutput::ClearToEndOfLine(_mode) => {
-                                            turm.clear_to_end_of_line()
-                                        }
-                                        AnsiOutput::ClearToEOS => turm.clear_to_eos(),
-                                        AnsiOutput::MoveCursor(x, y) => turm.move_cursor(*x, *y),
-                                        AnsiOutput::MoveCursorHorizontal(x) => {
-                                            turm.move_cursor(*x, turm.cursor.pos.y)
-                                        }
-                                        AnsiOutput::CursorUp(amount) => turm.move_cursor(
-                                            turm.cursor.pos.x,
-                                            turm.cursor.pos.y - amount,
-                                        ),
-                                        AnsiOutput::CursorDown(amount) => turm.move_cursor(
-                                            turm.cursor.pos.x,
-                                            turm.cursor.pos.y + amount,
-                                        ),
-                                        AnsiOutput::CursorForward(amount) => turm.move_cursor(
-                                            turm.cursor.pos.x + amount,
-                                            turm.cursor.pos.y,
-                                        ),
-                                        AnsiOutput::CursorBackward(amount) => {
-                                            if amount <= &turm.cursor.pos.x {
-                                                turm.move_cursor(
-                                                    turm.cursor.pos.x - amount,
-                                                    turm.cursor.pos.y,
-                                                );
-                                            }
-                                        }
-                                        AnsiOutput::HideCursor => turm.show_cursor = false,
-                                        AnsiOutput::ShowCursor => turm.show_cursor = true,
-                                        AnsiOutput::ScrollDown => turm.scroll_down(),
-                                        AnsiOutput::Backspace => turm.backspace(),
-                                        AnsiOutput::Sgr(c) => turm.color(*c),
-                                        AnsiOutput::Bell => println!("DING DONG"),
-                                    }
-                                }
-                                final_buf.append(&mut Vec::from(&mut buf[0..s]));
+                                turm.parse(ansi_res);
                             } else {
                                 break;
                             }
+                        } else {
+                            break;
                         }
-                        drop(turm1);
-                        rs.request_repaint();
                     }
+
+                    rs.request_repaint();
                 }
+
+                drop(turm1);
             }
         });
 
