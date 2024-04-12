@@ -3,7 +3,7 @@ use std::{
     slice::Iter,
 };
 
-use crate::cell::Cell;
+use crate::grid::cell::Cell;
 
 #[derive(Debug, Clone)]
 pub struct Row {

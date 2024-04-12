@@ -3,8 +3,11 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-use crate::cell::Style;
-use crate::row::Row;
+use self::cell::Style;
+use self::row::Row;
+
+pub mod cell;
+pub mod row;
 
 #[derive(Debug)]
 pub struct Grid {

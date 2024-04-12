@@ -1,6 +1,6 @@
 use crate::{
     ansi::{AnsiOutput, GraphicRendition},
-    cell::Style,
+    grid::cell::Style,
     grid::Grid,
 };
 

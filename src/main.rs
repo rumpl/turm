@@ -13,12 +13,10 @@ use turm::Turm;
 
 mod ansi;
 mod ansi_codes;
-mod cell;
 mod color;
 mod font;
 mod grid;
 mod gui;
-mod row;
 mod terminal_gui_input;
 mod terminal_io;
 mod turm;
