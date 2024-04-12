@@ -10,6 +10,7 @@ mod font;
 mod grid;
 mod gui;
 mod row;
+mod terminal_input;
 mod turm;
 
 fn main() {

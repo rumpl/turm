@@ -1,16 +1,13 @@
 use std::{
     ops::DerefMut,
     os::fd::{AsRawFd, OwnedFd},
-    sync::{
-        mpsc::{self, Sender},
-        Arc, Mutex,
-    },
+    sync::{mpsc, Arc, Mutex},
     thread,
     time::Duration,
 };
 
-use crate::{ansi::Ansi, color::Color, font, turm::Turm};
-use egui::{Color32, Event, FontFamily, FontId, InputState, Key, Modifiers, Rect, Stroke};
+use crate::{ansi::Ansi, color::Color, font, terminal_input::TerminalInput, turm::Turm};
+use egui::{Color32, FontFamily, FontId, Rect, Stroke};
 use nix::ioctl_write_ptr_bad;
 
 ioctl_write_ptr_bad!(
@@ -25,7 +22,7 @@ unsafe fn set_nonblocking(fd: i32) {
 }
 
 pub struct TurmGui {
-    rtx: Sender<Vec<u8>>,
+    terminal_input: TerminalInput,
     turm: Arc<Mutex<Turm>>,
 }
 
@@ -118,76 +115,20 @@ impl TurmGui {
         });
 
         Self {
-            rtx,
+            terminal_input: TerminalInput::new(rtx),
             turm: turmie.clone(),
-        }
-    }
-
-    fn write_input_to_terminal(&self, input: &InputState) {
-        for event in &input.events {
-            let text = match event {
-                Event::Text(text) => Some(text.as_str()),
-                Event::Key {
-                    key: Key::Backspace,
-                    pressed: true,
-                    ..
-                } => Some("\u{8}"),
-                Event::Key {
-                    key: Key::Enter,
-                    pressed: true,
-                    ..
-                } => Some("\r"),
-                Event::Key {
-                    key: Key::ArrowUp,
-                    pressed: true,
-                    ..
-                } => Some("\x1bOA"),
-                Event::Key {
-                    key: Key::ArrowDown,
-                    pressed: true,
-                    ..
-                } => Some("\x1bOB"),
-                Event::Key {
-                    key: Key::Tab,
-                    pressed: true,
-                    ..
-                } => Some("\t"),
-                Event::Key {
-                    key: Key::Escape,
-                    pressed: true,
-                    ..
-                } => Some("\x1b"),
-                Event::Key {
-                    key,
-                    modifiers: Modifiers { ctrl: true, .. },
-                    pressed: true,
-                    ..
-                } => {
-                    // Meh...
-                    let n = key.name().chars().next().unwrap();
-                    let mut m = n as u8;
-                    m &= 0b1001_1111;
-                    let _ = self.rtx.send(vec![m]);
-                    None
-                }
-                _ => None,
-            };
-
-            if let Some(text) = text {
-                let _ = self.rtx.send(text.into());
-            }
         }
     }
 }
 
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let font_size = 14.0;
+        let font_size = 10.0;
         let line_height = font_size + 3.0;
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.input(|input_state| {
-                self.write_input_to_terminal(input_state);
+                self.terminal_input.write_input_to_terminal(input_state);
             });
 
             let font_id = FontId {
@@ -223,6 +164,7 @@ impl eframe::App for TurmGui {
                     line_height: Some(line_height),
                     ..Default::default()
                 };
+
                 job.append(&section.text, 0.0, tf);
             }
 
