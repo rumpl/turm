@@ -72,7 +72,7 @@ fn main() {
 
                     Box::<TurmGui>::new(TurmGui::new(
                         cc,
-                        fd.as_raw_fd(),
+                        fd,
                         turm_arc,
                         TerminalGuiInput::new(rtx),
                         cols,

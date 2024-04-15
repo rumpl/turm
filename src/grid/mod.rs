@@ -1,5 +1,4 @@
 use std::{
-    default,
     fmt::Display,
     ops::{Index, IndexMut},
 };
@@ -89,8 +88,6 @@ impl Grid {
     }
 
     pub fn resize(&mut self, new_columns: usize, new_lines: usize) {
-        println!("before\n{}", self);
-
         let mut new_rows: Vec<Row> = Vec::new();
         let mut current_row = Row::new(new_columns);
         let mut current_column_index = 0;
@@ -142,7 +139,6 @@ impl Grid {
         // Update grid rows and columns
         self.rows = new_rows;
         self.columns = new_columns; // Update the column count
-        println!("after\n{}", self);
     }
 
     fn print_vec(&self, v: &[Row], f: &mut std::fmt::Formatter) -> std::fmt::Result {

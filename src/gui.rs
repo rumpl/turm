@@ -1,30 +1,54 @@
 use std::{
+    io::Error,
     ops::DerefMut,
-    os::fd::RawFd,
+    os::fd::{AsRawFd, OwnedFd, RawFd},
     sync::{Arc, Mutex},
 };
 
 use crate::{font, terminal_gui_input::TerminalGuiInput, turm::Turm};
 use egui::{Color32, FontFamily, FontId, Rect, Stroke};
-use nix::ioctl_write_ptr_bad;
 
-ioctl_write_ptr_bad!(
-    set_window_size_ioctl,
-    nix::libc::TIOCSWINSZ,
-    nix::pty::Winsize
-);
+fn resize(fd: RawFd, cols: usize, rows: usize) {
+    let ws = nix::pty::Winsize {
+        ws_col: cols as u16,
+        ws_row: rows as u16,
+        ws_xpixel: 0,
+        ws_ypixel: 0,
+    };
+    let res = unsafe { libc::ioctl(fd, libc::TIOCSWINSZ, &ws as *const _) };
+    if res < 0 {
+        println!("ioctl TIOCSWINSZ failed: {}", Error::last_os_error());
+        std::process::exit(1);
+    }
+}
+
+fn resize2(fd: RawFd, cols: usize, rows: usize, font_size: f32, width: f32) {
+    let ws = nix::pty::Winsize {
+        ws_col: cols as u16,
+        ws_row: rows as u16,
+        ws_xpixel: cols as u16 * width as u16,
+        ws_ypixel: rows as u16 * font_size as u16,
+    };
+
+    let res = unsafe { libc::ioctl(fd, libc::TIOCSWINSZ, &ws as *const _) };
+    if res < 0 {
+        println!("ioctl TIOCSWINSZ failed: {}", Error::last_os_error());
+        std::process::exit(1);
+    }
+}
 
 pub struct TurmGui {
     terminal_gui_input: TerminalGuiInput,
     turm: Arc<Mutex<Turm>>,
     w: usize,
     h: usize,
+    fd: OwnedFd,
 }
 
 impl TurmGui {
     pub fn new(
         cc: &eframe::CreationContext<'_>,
-        fd: RawFd,
+        fd: OwnedFd,
         turm: Arc<Mutex<Turm>>,
         terminal_gui_input: TerminalGuiInput,
         cols: usize,
@@ -32,19 +56,11 @@ impl TurmGui {
     ) -> Self {
         cc.egui_ctx.set_fonts(font::load());
 
-        let ws = nix::pty::Winsize {
-            ws_col: cols as u16,
-            ws_row: rows as u16,
-            ws_xpixel: 0,
-            ws_ypixel: 0,
-        };
-
-        unsafe {
-            let _ = set_window_size_ioctl(fd, &ws);
-        }
+        resize(fd.as_raw_fd(), cols, rows);
 
         Self {
             terminal_gui_input,
+            fd,
             turm,
             w: cols,
             h: rows,
@@ -72,12 +88,13 @@ impl eframe::App for TurmGui {
 
             let mut turm1 = self.turm.lock().unwrap();
             let turm = turm1.deref_mut();
-            println!("{}", turm.grid);
 
             if w != self.w || h != self.h {
                 turm.grid.resize(w, h);
                 self.w = w;
                 self.h = h;
+
+                resize2(self.fd.as_raw_fd(), self.w, self.h, font_size, width);
             }
 
             ui.input(|input_state| {
