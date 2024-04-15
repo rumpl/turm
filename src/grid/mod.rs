@@ -1,9 +1,10 @@
 use std::{
+    default,
     fmt::Display,
     ops::{Index, IndexMut},
 };
 
-use self::cell::Style;
+use self::cell::{Cell, Style};
 use self::row::Row;
 
 pub mod cell;
@@ -67,7 +68,11 @@ impl Grid {
                     text = "".to_string();
                     current_style = col.style;
                 }
-                text.push_str(&String::from(col.c));
+                if let Some(c) = col.c {
+                    text.push_str(&String::from(c));
+                } else {
+                    text.push(' ');
+                }
             }
             text.push('\n');
         }
@@ -83,6 +88,63 @@ impl Grid {
         res
     }
 
+    pub fn resize(&mut self, new_columns: usize, new_lines: usize) {
+        println!("before\n{}", self);
+
+        let mut new_rows: Vec<Row> = Vec::new();
+        let mut current_row = Row::new(new_columns);
+        let mut current_column_index = 0;
+
+        // Flatten all cells from existing rows into a single vector
+        let all_cells: Vec<Cell> = self.rows.iter().flat_map(|r| r.inner.clone()).collect();
+
+        let mut advance = false;
+        // Wrap cells into new rows based on the new column width
+        for cell in all_cells {
+            if advance && cell.c.is_none() {
+                continue;
+            } else {
+                advance = false;
+            }
+            // If we arrived at the end of the row
+            if current_column_index == new_columns {
+                new_rows.push(current_row);
+                current_row = Row::new(new_columns);
+                current_column_index = 0;
+            }
+
+            if cell.c.is_some() {
+                current_row[current_column_index] = cell;
+                current_column_index += 1;
+            } else {
+                new_rows.push(current_row);
+                current_row = Row::new(new_columns);
+                current_column_index = 0;
+                advance = true;
+            }
+
+            // Break out of the loop early if we've filled up the new_lines
+            if new_rows.len() == new_lines {
+                break;
+            }
+        }
+
+        // Add the last row if it's not empty and we haven't exceeded new_lines
+        if !current_row.inner.is_empty() && new_rows.len() < new_lines {
+            new_rows.push(current_row);
+        }
+
+        // If the new size has more lines than the current content, add empty rows
+        while new_rows.len() < new_lines {
+            new_rows.push(Row::new(new_columns));
+        }
+
+        // Update grid rows and columns
+        self.rows = new_rows;
+        self.columns = new_columns; // Update the column count
+        println!("after\n{}", self);
+    }
+
     fn print_vec(&self, v: &[Row], f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "|")?;
         for _ in 0..self.columns {
@@ -93,10 +155,12 @@ impl Grid {
         for row in v {
             write!(f, "|")?;
             for cell in &row.inner {
-                if cell.c == '\t' {
-                    write!(f, " ")?;
-                } else {
-                    write!(f, "{}", cell.c)?;
+                if let Some(c) = cell.c {
+                    if c == '\t' {
+                        write!(f, " ")?;
+                    } else {
+                        write!(f, "{}", c)?;
+                    }
                 }
             }
             writeln!(f, "|")?;
@@ -147,9 +211,9 @@ impl Iterator for Grid {
 
 impl Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "\n\n#################################3\n\n")?;
-        self.print_vec(&self.scrollback, f)?;
-        writeln!(f, "-------------------------------------")?;
+        // writeln!(f, "\n\n#################################\n\n")?;
+        // self.print_vec(&self.scrollback, f)?;
+        // writeln!(f, "-------------------------------------")?;
         self.print_vec(&self.rows, f)?;
 
         Ok(())
@@ -163,9 +227,18 @@ mod test {
     #[test]
     fn test_scroll_up() {
         let mut g = Grid::new(2, 2);
-        g[1][0].c = 'a';
-        assert!(g[0][0].c == ' ');
+        g[1][0].c = Some('a');
+        assert!(g[0][0].c == Some(' '));
         g.scroll_up();
-        assert!(g[0][0].c == 'a');
+        assert!(g[0][0].c == Some('a'));
+    }
+
+    #[test]
+    fn test_resize() {
+        let mut g = Grid::new(2, 2);
+        g[0][0].c = Some('a');
+        g[1][0].c = Some('b');
+
+        g.resize(3, 2);
     }
 }

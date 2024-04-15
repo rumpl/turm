@@ -17,6 +17,8 @@ ioctl_write_ptr_bad!(
 pub struct TurmGui {
     terminal_gui_input: TerminalGuiInput,
     turm: Arc<Mutex<Turm>>,
+    w: usize,
+    h: usize,
 }
 
 impl TurmGui {
@@ -44,16 +46,40 @@ impl TurmGui {
         Self {
             terminal_gui_input,
             turm,
+            w: cols,
+            h: rows,
         }
     }
 }
 
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let font_size = 10.0;
+        let font_size = 14.0;
         let line_height = font_size + 3.0;
+        let font_id = FontId {
+            size: font_size,
+            family: FontFamily::Name("berkeley".into()),
+        };
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            let mut width = 0.0;
+            ctx.fonts(|font| {
+                width = font.glyph_width(&font_id, 'm');
+            });
+
+            let w = (ui.available_width() / width) as usize;
+            let h = (ui.available_height() / line_height) as usize;
+
+            let mut turm1 = self.turm.lock().unwrap();
+            let turm = turm1.deref_mut();
+            println!("{}", turm.grid);
+
+            if w != self.w || h != self.h {
+                turm.grid.resize(w, h);
+                self.w = w;
+                self.h = h;
+            }
+
             ui.input(|input_state| {
                 self.terminal_gui_input.write_input_to_terminal(input_state);
             });
@@ -68,8 +94,6 @@ impl eframe::App for TurmGui {
             };
 
             let mut job = egui::text::LayoutJob::default();
-            let mut turm1 = self.turm.lock().unwrap();
-            let turm = turm1.deref_mut();
             for section in turm.grid.sections() {
                 let fid = if section.style.bold {
                     bold_font_id.clone()
@@ -98,11 +122,6 @@ impl eframe::App for TurmGui {
             let res = ui.label(job);
 
             if turm.show_cursor {
-                let mut width = 0.0;
-                ctx.fonts(|font| {
-                    width = font.glyph_width(&font_id, 'm');
-                });
-
                 let painter = ui.painter();
                 let pos = egui::pos2(
                     (turm.cursor.pos.x as f32) * width + res.rect.left(),

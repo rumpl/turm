@@ -101,7 +101,7 @@ impl Turm {
                 }
             }
 
-            self.grid[self.cursor.pos.y][self.cursor.pos.x].c = c as char;
+            self.grid[self.cursor.pos.y][self.cursor.pos.x].c = Some(c as char);
             self.grid[self.cursor.pos.y][self.cursor.pos.x].style = self.current_style;
 
             self.move_cursor(self.cursor.pos.x + 1, self.cursor.pos.y);
@@ -139,7 +139,7 @@ impl Turm {
 
     pub fn clear_to_end_of_line(&mut self) {
         for i in self.cursor.pos.x..self.columns {
-            self.grid[self.cursor.pos.y][i].c = ' ';
+            self.grid[self.cursor.pos.y][i].c = None;
             self.grid[self.cursor.pos.y][i].style = Style::default();
         }
     }
@@ -148,7 +148,7 @@ impl Turm {
         let mut i = self.cursor.pos.x;
         let mut j = self.cursor.pos.y;
         loop {
-            self.grid[j][i].c = ' ';
+            self.grid[j][i].c = None;
             self.grid[j][i].style = Style::default();
             i += 1;
             if i == self.columns {

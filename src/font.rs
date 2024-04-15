@@ -6,14 +6,14 @@ pub fn load() -> FontDefinitions {
     fonts.font_data.insert(
         "berkeley".to_owned(),
         egui::FontData::from_static(include_bytes!(
-            "/home/rumpl/.local/share/fonts/BerkeleyMono-Regular.ttf"
+            "/Users/rumpl/Library/Fonts/BerkeleyMono-Regular.ttf"
         )),
     );
 
     fonts.font_data.insert(
         "berkeley-bold".to_owned(),
         egui::FontData::from_static(include_bytes!(
-            "/home/rumpl/.local/share/fonts/BerkeleyMono-Bold.ttf"
+            "/Users/rumpl/Library/Fonts/BerkeleyMono-Bold.ttf"
         )),
     );
 

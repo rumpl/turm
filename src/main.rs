@@ -42,8 +42,8 @@ fn main() {
                 Box::new(|cc| {
                     let fd = result.master;
 
-                    let cols: usize = 150;
-                    let rows: usize = 40;
+                    let cols: usize = 92;
+                    let rows: usize = 34;
 
                     let rs = cc.egui_ctx.clone();
 

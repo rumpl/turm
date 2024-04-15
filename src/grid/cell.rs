@@ -23,14 +23,14 @@ impl Default for Style {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Cell {
-    pub c: char,
+    pub c: Option<char>,
     pub style: Style,
 }
 
 impl Cell {
     pub fn new() -> Self {
         Self {
-            c: ' ',
+            c: None,
             style: Default::default(),
         }
     }

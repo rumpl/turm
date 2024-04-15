@@ -21,7 +21,7 @@ impl Row {
 
     pub fn reset(&mut self) {
         for cell in &mut self.inner {
-            cell.c = ' ';
+            cell.c = None;
         }
     }
 }
