@@ -48,13 +48,13 @@ impl CSIParser {
 
     fn push(&mut self, b: u8) -> Option<Result<CSIParseResult, CSIParserError>> {
         if is_csi_param(b) {
-            if self.state == CSIParserState::Intermediates {
+            if self.state != CSIParserState::Parameters {
                 return Some(Err(CSIParserError::InvalidCSI));
             }
             self.result.params.push(b);
         } else if is_csi_intermediate(b) {
-            self.result.intermediates.push(b);
             self.state = CSIParserState::Intermediates;
+            self.result.intermediates.push(b);
         } else if is_csi_terminator(b) {
             self.result.func = b;
             return Some(Ok(self.result.clone()));
@@ -220,7 +220,8 @@ pub enum AnsiOutput {
     ShowCursor,
     CursorBackward(usize),
     CursorForward(usize),
-    FILL_WITH_E,
+    FillWithE,
+    NextLine,
 }
 
 impl Ansi {
@@ -272,17 +273,26 @@ impl Ansi {
                             res.push(AnsiOutput::ScrollDown);
                             self.state = AnsiState::Empty;
                         }
+                        ansi_codes::CURSOR_DOWNWARD => {
+                            res.push(AnsiOutput::CursorDown(1));
+                            self.state = AnsiState::Empty;
+                        }
+                        ansi_codes::NEXT_LINE => {
+                            res.push(AnsiOutput::NextLine);
+                            self.state = AnsiState::Empty;
+                        }
                         _ => {
                             let first = (b & 0b0111_0000) >> 4;
                             let second = b & 0b0000_1111;
                             println!("unknown ansi {} {:#02x} {first}/{second}", *b as char, b);
+                            self.state = AnsiState::Empty;
                         }
                     }
                 }
                 AnsiState::Hash => {
                     match *b {
                         ansi_codes::FILL_WITH_E => {
-                            res.push(AnsiOutput::FILL_WITH_E);
+                            res.push(AnsiOutput::FillWithE);
                         }
                         _ => {
                             println!("Unknown hash func {b}");

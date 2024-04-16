@@ -74,7 +74,8 @@ impl Turm {
                 AnsiOutput::Backspace => self.backspace(),
                 AnsiOutput::Sgr(c) => self.color(*c),
                 AnsiOutput::Bell => println!("DING DONG"),
-                AnsiOutput::FILL_WITH_E => self.fill_with_e(),
+                AnsiOutput::FillWithE => self.fill_with_e(),
+                AnsiOutput::NextLine => self.next_line(),
             }
         }
     }
@@ -85,6 +86,14 @@ impl Turm {
                 self.grid[j][i].c = Some('E');
                 self.grid[j][i].style = Style::default();
             }
+        }
+    }
+
+    fn next_line(&mut self) {
+        self.move_cursor(0, self.cursor.pos.y + 1);
+        if self.cursor.pos.y == self.lines {
+            self.move_cursor(0, self.lines - 1);
+            self.scroll_up();
         }
     }
 
