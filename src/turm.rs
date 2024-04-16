@@ -22,8 +22,8 @@ pub struct Turm {
     pub grid: Grid,
 
     current_style: Style,
-    lines: usize,
-    columns: usize,
+    pub lines: usize,
+    pub columns: usize,
     needs_wrap: bool,
 }
 

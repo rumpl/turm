@@ -68,29 +68,60 @@ impl TurmGui {
     }
 }
 
+fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
+    let font_id = FontId {
+        size: font_size,
+        family: FontFamily::Name("berkeley".into()),
+    };
+    ctx.fonts(move |fonts| {
+        let rect = fonts
+            .layout(
+                "qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer\n\
+             qwerqwerqwerqwer"
+                    .to_string(),
+                font_id.clone(),
+                Color32::WHITE,
+                f32::INFINITY,
+            )
+            .rect;
+
+        let w = rect.width() / 16.0;
+        let h = rect.height() / 16.0;
+
+        (w, h)
+    })
+}
+
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let font_size = 14.0;
-        let line_height = font_size + 3.0;
-        let font_id = FontId {
-            size: font_size,
-            family: FontFamily::Name("berkeley".into()),
-        };
+        let font_size = 12.0;
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            let mut width = 0.0;
-            ctx.fonts(|font| {
-                width = font.glyph_width(&font_id, 'm');
-            });
-
+            let (width, height) = get_char_size(ctx, font_size);
             let w = (ui.available_width() / width) as usize;
-            let h = (ui.available_height() / line_height) as usize;
+            let h = (ui.available_height() / height) as usize;
 
             let mut turm1 = self.turm.lock().unwrap();
             let turm = turm1.deref_mut();
 
             if w != self.w || h != self.h {
                 turm.grid.resize(w, h);
+                turm.columns = w;
+                turm.lines = h;
                 self.w = w;
                 self.h = h;
 
@@ -129,7 +160,6 @@ impl eframe::App for TurmGui {
                     background: section.style.bg.into(),
                     underline,
                     italics: section.style.italics,
-                    line_height: Some(line_height),
                     ..Default::default()
                 };
 
@@ -141,10 +171,8 @@ impl eframe::App for TurmGui {
             if turm.show_cursor {
                 let painter = ui.painter();
                 let pos = egui::pos2(
-                    (turm.cursor.pos.x as f32) * width + res.rect.left(),
-                    (turm.cursor.pos.y as f32) * line_height
-                        + (turm.cursor.pos.y as f32) * (-0.15)
-                        + res.rect.top(),
+                    (turm.cursor.pos.x as f32) * width + res.rect.left() - 2.0,
+                    (turm.cursor.pos.y as f32) * height + res.rect.top(),
                 );
                 let size = egui::vec2(width, font_size);
                 painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
