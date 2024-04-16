@@ -22,4 +22,5 @@ pub const SHOW_CURSOR: u8 = b'h';
 pub const CLEAR_LINE: u8 = b'K';
 pub const CLEAR_EOS: u8 = b'J';
 pub const CURSOR_POSITION: u8 = b'H';
+pub const HVP: u8 = ANSI_CODE!(6, 6);
 pub const CURSOR_HORIZONTAL_POSITION: u8 = b'G';

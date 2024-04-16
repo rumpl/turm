@@ -51,6 +51,9 @@ impl Grid {
         }
     }
 
+    /// Returns the different style sections to render.
+    /// Note: this thing allocates too much, make it so that it returns ranges
+    /// instead and stop allocating things in a tight renderer loop.
     pub fn sections(&self) -> Vec<TextSection> {
         let mut res = vec![];
 

@@ -336,7 +336,7 @@ impl Ansi {
                                 res.push(AnsiOutput::ClearToEndOfLine(mode.into()));
                             }
                             ansi_codes::CLEAR_EOS => res.push(AnsiOutput::ClearToEOS),
-                            ansi_codes::CURSOR_POSITION => {
+                            ansi_codes::CURSOR_POSITION | ansi_codes::HVP => {
                                 let params = parse_params(&d.params);
                                 let x = if params.len() <= 1 { 1 } else { params[1] };
                                 let y = if params.is_empty() { 1 } else { params[0] };
