@@ -8,8 +8,11 @@ pub const ESC: u8 = b'\x1b';
 pub const BS: u8 = b'\x08';
 pub const BEL: u8 = b'\x07';
 pub const ESC_START: u8 = b'[';
+pub const HASH: u8 = ANSI_CODE!(2, 3); // # in normal
 pub const OSC_START: u8 = ANSI_CODE!(5, 13);
 pub const SCROLL_REVERSE: u8 = b'M';
+
+pub const FILL_WITH_E: u8 = b'8';
 
 pub const STRING_TERMINATOR: u8 = ANSI_CODE!(9, 12);
 pub const SGR: u8 = b'm';

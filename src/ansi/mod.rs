@@ -91,6 +91,7 @@ impl OscParser {
 enum AnsiState {
     Empty,
     Escape,
+    Hash,
     Csi(CSIParser),
     Osc(OscParser),
 }
@@ -219,6 +220,7 @@ pub enum AnsiOutput {
     ShowCursor,
     CursorBackward(usize),
     CursorForward(usize),
+    FILL_WITH_E,
 }
 
 impl Ansi {
@@ -260,6 +262,9 @@ impl Ansi {
                         ansi_codes::ESC_START => {
                             self.state = AnsiState::Csi(CSIParser::new());
                         }
+                        ansi_codes::HASH => {
+                            self.state = AnsiState::Hash;
+                        }
                         ansi_codes::OSC_START => {
                             self.state = AnsiState::Osc(OscParser::new());
                         }
@@ -273,6 +278,21 @@ impl Ansi {
                             println!("unknown ansi {} {:#02x} {first}/{second}", *b as char, b);
                         }
                     }
+                }
+                AnsiState::Hash => {
+                    match *b {
+                        ansi_codes::FILL_WITH_E => {
+                            res.push(AnsiOutput::FILL_WITH_E);
+                        }
+                        _ => {
+                            println!("Unknown hash func {b}");
+                        }
+                    };
+
+                    self.state = AnsiState::Empty;
+                }
+                AnsiState::Osc(_) => {
+                    self.state = AnsiState::Empty;
                 }
                 AnsiState::Csi(parser) => match parser.push(*b) {
                     Some(Ok(d)) => {

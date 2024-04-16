@@ -74,6 +74,16 @@ impl Turm {
                 AnsiOutput::Backspace => self.backspace(),
                 AnsiOutput::Sgr(c) => self.color(*c),
                 AnsiOutput::Bell => println!("DING DONG"),
+                AnsiOutput::FILL_WITH_E => self.fill_with_e(),
+            }
+        }
+    }
+
+    fn fill_with_e(&mut self) {
+        for i in 0..self.columns {
+            for j in 0..self.lines {
+                self.grid[j][i].c = Some('E');
+                self.grid[j][i].style = Style::default();
             }
         }
     }
