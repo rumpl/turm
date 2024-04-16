@@ -80,6 +80,8 @@ impl Turm {
         }
     }
 
+    /// Fills the entier screen with 'E's, also known as DECALN
+    /// https://www.vt100.net/docs/vt510-rm/DECALN.html
     fn fill_with_e(&mut self) {
         for i in 0..self.columns {
             for j in 0..self.lines {
@@ -87,6 +89,7 @@ impl Turm {
                 self.grid[j][i].style = Style::default();
             }
         }
+        self.move_cursor(0, 0);
     }
 
     fn next_line(&mut self) {
