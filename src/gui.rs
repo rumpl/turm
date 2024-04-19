@@ -77,21 +77,21 @@ fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
         let rect = fonts
             .layout(
                 "qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer\n\
-             qwerqwerqwerqwer"
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer"
                     .to_string(),
                 font_id.clone(),
                 Color32::WHITE,
