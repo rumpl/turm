@@ -106,6 +106,7 @@ impl Grid {
             } else {
                 advance = false;
             }
+
             // If we arrived at the end of the row
             if current_column_index == new_columns {
                 new_rows.push(current_row);
@@ -145,11 +146,9 @@ impl Grid {
     }
 
     fn print_vec(&self, v: &[Row], f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "|")?;
         for _ in 0..self.columns {
             write!(f, "_")?;
         }
-        writeln!(f, "|")?;
 
         for row in v {
             write!(f, "|")?;
@@ -165,11 +164,9 @@ impl Grid {
             writeln!(f, "|")?;
         }
 
-        write!(f, "|")?;
         for _ in 0..self.columns {
-            write!(f, "_")?;
+            write!(f, "-")?;
         }
-        writeln!(f, "|")?;
 
         Ok(())
     }
@@ -210,9 +207,9 @@ impl Iterator for Grid {
 
 impl Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // writeln!(f, "\n\n#################################\n\n")?;
-        // self.print_vec(&self.scrollback, f)?;
-        // writeln!(f, "-------------------------------------")?;
+        writeln!(f, "\n\n#################################\n\n")?;
+        self.print_vec(&self.scrollback, f)?;
+        writeln!(f, "-------------------------------------")?;
         self.print_vec(&self.rows, f)?;
 
         Ok(())
@@ -227,7 +224,7 @@ mod test {
     fn test_scroll_up() {
         let mut g = Grid::new(2, 2);
         g[1][0].c = Some('a');
-        assert!(g[0][0].c == Some(' '));
+        assert!(g[0][0].c == None);
         g.scroll_up();
         assert!(g[0][0].c == Some('a'));
     }
@@ -239,5 +236,22 @@ mod test {
         g[1][0].c = Some('b');
 
         g.resize(3, 2);
+
+        assert!(g[0][0].c == Some('a'));
+        assert!(g[1][0].c == Some('b'));
+    }
+
+    #[test]
+    fn test_resize_with_empty() {
+        let mut g = Grid::new(2, 2);
+        g[0][0].c = Some('a');
+        g[1][0].c = Some(' ');
+        g[1][1].c = Some('a');
+
+        println!("{}", g);
+        g.resize(3, 3);
+        println!("{}", g);
+
+        assert!(g[1][1].c == Some('a'));
     }
 }

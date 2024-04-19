@@ -38,6 +38,16 @@ impl TerminalGuiInput {
                     ..
                 } => Some("\x1bOB"),
                 Event::Key {
+                    key: Key::ArrowRight,
+                    pressed: true,
+                    ..
+                } => Some("\x1bOC"),
+                Event::Key {
+                    key: Key::ArrowLeft,
+                    pressed: true,
+                    ..
+                } => Some("\x1bOD"),
+                Event::Key {
                     key: Key::Tab,
                     pressed: true,
                     ..
