@@ -171,10 +171,10 @@ impl eframe::App for TurmGui {
             if turm.show_cursor {
                 let painter = ui.painter();
                 let pos = egui::pos2(
-                    (turm.cursor.pos.x as f32) * width + res.rect.left() - 2.0,
-                    (turm.cursor.pos.y as f32) * height + res.rect.top(),
+                    (turm.cursor.pos.x as f32) * width + res.rect.left(),
+                    (turm.cursor.pos.y as f32) * height + res.rect.top() - 1.0,
                 );
-                let size = egui::vec2(width, font_size);
+                let size = egui::vec2(width, height);
                 painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
             }
             drop(turm1);
