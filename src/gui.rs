@@ -71,7 +71,7 @@ impl TurmGui {
 fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
     let font_id = FontId {
         size: font_size,
-        family: FontFamily::Name("berkeley".into()),
+        family: FontFamily::Monospace, //Name("berkeley".into()),
     };
     ctx.fonts(move |fonts| {
         let rect = fonts
@@ -134,11 +134,11 @@ impl eframe::App for TurmGui {
 
             let font_id = FontId {
                 size: font_size,
-                family: FontFamily::Name("berkeley".into()),
+                family: FontFamily::Monospace, //Name("berkeley".into()),
             };
             let bold_font_id = FontId {
                 size: font_size,
-                family: FontFamily::Name("berkeley-bold".into()),
+                family: FontFamily::Monospace, //Name("berkeley-bold".into()),
             };
 
             let mut job = egui::text::LayoutJob::default();

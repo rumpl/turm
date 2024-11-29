@@ -1,37 +1,31 @@
-use egui::{FontDefinitions, FontFamily};
+use std::fs::read;
+
+use egui::{FontData, FontDefinitions, FontFamily};
+use font_kit::{
+    family_name::FamilyName, handle::Handle, properties::Properties, source::SystemSource,
+};
 
 pub fn load() -> FontDefinitions {
     let mut fonts = egui::FontDefinitions::default();
 
-    fonts.font_data.insert(
-        "berkeley".to_owned(),
-        egui::FontData::from_static(include_bytes!(
-            "/Users/rumpl/Library/Fonts/BerkeleyMono-Regular.ttf"
-        )),
-    );
+    let handle = SystemSource::new()
+        .select_best_match(&[FamilyName::Monospace], &Properties::new())
+        .unwrap();
 
-    fonts.font_data.insert(
-        "berkeley-bold".to_owned(),
-        egui::FontData::from_static(include_bytes!(
-            "/Users/rumpl/Library/Fonts/BerkeleyMono-Bold.ttf"
-        )),
-    );
+    let f = handle.load().unwrap();
+
+    let buf: Vec<u8> = match handle {
+        Handle::Memory { bytes, .. } => bytes.to_vec(),
+        Handle::Path { path, .. } => read(path).unwrap(),
+    };
 
     fonts
-        .families
-        .entry(egui::FontFamily::Monospace)
-        .or_default()
-        .insert(0, "berkeley".to_owned());
+        .font_data
+        .insert(f.full_name(), FontData::from_owned(buf));
 
-    fonts.families.insert(
-        FontFamily::Name("berkeley".into()),
-        vec!["berkeley".to_owned()],
-    );
-
-    fonts.families.insert(
-        FontFamily::Name("berkeley-bold".into()),
-        vec!["berkeley-bold".to_owned()],
-    );
+    if let Some(vec) = fonts.families.get_mut(&FontFamily::Monospace) {
+        vec.push(f.full_name().to_owned());
+    }
 
     fonts
 }

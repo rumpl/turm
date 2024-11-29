@@ -67,9 +67,7 @@ impl CSIParser {
 struct OscParseResult {}
 
 #[derive(Debug)]
-enum OscParserError {
-    InvalidOsc,
-}
+enum OscParserError {}
 
 #[derive(Debug)]
 struct OscParser {}
@@ -222,6 +220,7 @@ pub enum AnsiOutput {
     CursorForward(usize),
     FillWithE,
     NextLine,
+    DeleteCharacters(usize),
 }
 
 impl Ansi {
@@ -301,8 +300,14 @@ impl Ansi {
 
                     self.state = AnsiState::Empty;
                 }
-                AnsiState::Osc(_) => {
+                AnsiState::Osc(parser) => {
+                    if parser.push(*b).is_some() {
+                        println!("parsed");
+                    }
+
+                    // osc not finished parsing, do nothing
                     self.state = AnsiState::Empty;
+                    println!("parser osc");
                 }
                 AnsiState::Csi(parser) => match parser.push(*b) {
                     Some(Ok(d)) => {
@@ -399,6 +404,11 @@ impl Ansi {
                             }
                             ansi_codes::HIDE_CURSOR => res.push(AnsiOutput::HideCursor),
                             ansi_codes::SHOW_CURSOR => res.push(AnsiOutput::ShowCursor),
+                            ansi_codes::DELETE_CHARACTER => {
+                                let params = parse_params(&d.params);
+                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                res.push(AnsiOutput::DeleteCharacters(amount));
+                            }
                             _ => {
                                 let first = (d.func & 0b0111_0000) >> 4;
                                 let second = d.func & 0b0000_1111;
@@ -415,16 +425,6 @@ impl Ansi {
                     }
                     _ => {} // CSI not finished, nothing to do
                 },
-                AnsiState::Osc(parser) => {
-                    match parser.push(*b) {
-                        Some(_) => {
-                            println!("parsed")
-                        }
-                        _ => {} // osc not finished parsing, do nothing
-                    }
-                    self.state = AnsiState::Empty;
-                    println!("parser osc");
-                }
             }
         }
 

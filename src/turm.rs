@@ -76,6 +76,19 @@ impl Turm {
                 AnsiOutput::Bell => println!("DING DONG"),
                 AnsiOutput::FillWithE => self.fill_with_e(),
                 AnsiOutput::NextLine => self.next_line(),
+                AnsiOutput::DeleteCharacters(n) => self.delete_characters(*n),
+            }
+        }
+    }
+
+    fn delete_characters(&mut self, n: usize) {
+        let x = self.cursor.pos.x;
+        let mut y = self.cursor.pos.y;
+        for _ in 0..n {
+            self.grid[x][y].c = Some(' ');
+            y += 1;
+            if y == self.lines {
+                self.next_line();
             }
         }
     }
