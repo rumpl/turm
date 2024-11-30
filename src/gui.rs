@@ -6,23 +6,9 @@ use std::{
 };
 
 use crate::{font, terminal_gui_input::TerminalGuiInput, turm::Turm};
-use egui::{Color32, FontFamily, FontId, Rect, Stroke};
+use egui::{Color32, FontFamily, FontId, Frame, Margin, Rect, Stroke};
 
-fn resize(fd: RawFd, cols: usize, rows: usize) {
-    let ws = nix::pty::Winsize {
-        ws_col: cols as u16,
-        ws_row: rows as u16,
-        ws_xpixel: 0,
-        ws_ypixel: 0,
-    };
-    let res = unsafe { libc::ioctl(fd, libc::TIOCSWINSZ, &ws as *const _) };
-    if res < 0 {
-        println!("ioctl TIOCSWINSZ failed: {}", Error::last_os_error());
-        std::process::exit(1);
-    }
-}
-
-fn resize2(fd: RawFd, cols: usize, rows: usize, font_size: f32, width: f32) {
+fn resize(fd: RawFd, cols: usize, rows: usize, font_size: f32, width: f32) {
     let ws = nix::pty::Winsize {
         ws_col: cols as u16,
         ws_row: rows as u16,
@@ -43,6 +29,7 @@ pub struct TurmGui {
     w: usize,
     h: usize,
     fd: OwnedFd,
+    font_size: f32,
 }
 
 impl TurmGui {
@@ -56,14 +43,13 @@ impl TurmGui {
     ) -> Self {
         cc.egui_ctx.set_fonts(font::load());
 
-        resize(fd.as_raw_fd(), cols, rows);
-
         Self {
             terminal_gui_input,
             fd,
             turm,
             w: cols,
             h: rows,
+            font_size: 12.0,
         }
     }
 }
@@ -108,10 +94,18 @@ fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
 
 impl eframe::App for TurmGui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let font_size = 12.0;
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let (width, height) = get_char_size(ctx, font_size);
+        let frame = egui::CentralPanel::default();
+        let frame = frame.frame(Frame {
+            inner_margin: Margin {
+                top: 0.0,
+                left: 0.0,
+                right: 0.0,
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+        frame.show(ctx, |ui| {
+            let (width, height) = get_char_size(ctx, self.font_size);
             let w = (ui.available_width() / width) as usize;
             let h = (ui.available_height() / height) as usize;
 
@@ -125,7 +119,7 @@ impl eframe::App for TurmGui {
                 self.w = w;
                 self.h = h;
 
-                resize2(self.fd.as_raw_fd(), self.w, self.h, font_size, width);
+                resize(self.fd.as_raw_fd(), self.w, self.h, self.font_size, width);
             }
 
             ui.input(|input_state| {
@@ -133,11 +127,11 @@ impl eframe::App for TurmGui {
             });
 
             let font_id = FontId {
-                size: font_size,
+                size: self.font_size,
                 family: FontFamily::Monospace, //Name("berkeley".into()),
             };
             let bold_font_id = FontId {
-                size: font_size,
+                size: self.font_size,
                 family: FontFamily::Monospace, //Name("berkeley-bold".into()),
             };
 
