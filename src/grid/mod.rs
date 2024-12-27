@@ -149,7 +149,7 @@ impl Grid {
         for _ in 0..self.columns {
             write!(f, "_")?;
         }
-        writeln!(f, "")?;
+        writeln!(f)?;
 
         for row in v {
             write!(f, "|")?;
@@ -169,7 +169,7 @@ impl Grid {
             write!(f, "-")?;
         }
 
-        writeln!(f, "")?;
+        writeln!(f)?;
         Ok(())
     }
 }
