@@ -64,10 +64,10 @@ impl Grid {
             for col in &row.inner {
                 if col.style != current_style {
                     res.push(TextSection {
-                        text: text.clone(),
+                        text,
                         style: current_style,
                     });
-                    text = "".to_string();
+                    text = String::new();
                     current_style = col.style;
                 }
                 if let Some(c) = col.c {
