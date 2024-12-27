@@ -149,6 +149,7 @@ impl Grid {
         for _ in 0..self.columns {
             write!(f, "_")?;
         }
+        writeln!(f, "")?;
 
         for row in v {
             write!(f, "|")?;
@@ -168,10 +169,12 @@ impl Grid {
             write!(f, "-")?;
         }
 
+        writeln!(f, "")?;
         Ok(())
     }
 }
 
+#[derive(Debug)]
 pub struct TextSection {
     pub text: String,
     pub style: Style,
