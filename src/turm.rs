@@ -121,6 +121,8 @@ impl Turm {
             }
         } else if c == b'\r' {
             self.move_cursor(0, self.cursor.pos.y);
+        } else if c == b'\t' {
+            self.move_cursor(self.cursor.pos.x + 4, self.cursor.pos.y);
         } else {
             if self.needs_wrap {
                 self.move_cursor(0, self.lines - 1);
