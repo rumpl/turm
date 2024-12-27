@@ -54,10 +54,10 @@ impl Grid {
             return;
         }
         let len = self.rows.len();
+        self.scrolldown.push(self.rows[len - 1].clone());
         for i in (1..len).rev() {
             self.rows.swap(i - 1, i);
         }
-        self.scrolldown.push(self.rows[len - 1].clone());
         self.rows[0] = self.scrollback.pop().unwrap();
     }
 
