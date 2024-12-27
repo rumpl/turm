@@ -73,11 +73,11 @@ fn main() {
                                 }
                                 TerminalGuiInputMessage::ScrollUp => {
                                     let mut t = event_turm.lock().unwrap();
-                                    t.scroll_up();
+                                    t.scroll_up(false);
                                 }
                                 TerminalGuiInputMessage::ScrollDown => {
                                     let mut t = event_turm.lock().unwrap();
-                                    t.scroll_down();
+                                    t.scroll_down(false);
                                 }
                             }
                         }

@@ -13,6 +13,7 @@ pub mod row;
 pub struct Grid {
     rows: Vec<Row>,
     scrollback: Vec<Row>,
+    scrolldown: Vec<Row>,
     index: usize,
     columns: usize,
 }
@@ -26,29 +27,38 @@ impl Grid {
             rows,
             index: 0,
             scrollback: vec![],
+            scrolldown: vec![],
             columns,
         }
     }
 
     /// Scrolls the grid up by one
-    pub fn scroll_up(&mut self) {
+    pub fn scroll_up(&mut self, force: bool) {
+        if !force && self.scrolldown.is_empty() {
+            return;
+        }
+        if self.scrolldown.is_empty() {
+            self.scrolldown.push(Row::new(self.columns));
+        }
         let len = self.rows.len();
         for i in 1..len {
             self.rows.swap(i - 1, i);
         }
         self.scrollback.push(self.rows[len - 1].clone());
-        self.rows[len - 1].reset();
+        self.rows[len - 1] = self.scrolldown.pop().unwrap();
     }
 
     /// Scrolls the grid down by one, taking the last row from the scrollback
-    pub fn scroll_down(&mut self) {
+    pub fn scroll_down(&mut self, force: bool) {
+        if !force && self.scrollback.is_empty() {
+            return;
+        }
         let len = self.rows.len();
         for i in (1..len).rev() {
             self.rows.swap(i - 1, i);
         }
-        if !self.scrollback.is_empty() {
-            self.rows[0] = self.scrollback.pop().unwrap();
-        }
+        self.scrolldown.push(self.rows[len - 1].clone());
+        self.rows[0] = self.scrollback.pop().unwrap();
     }
 
     /// Returns the different style sections to render.
@@ -211,9 +221,14 @@ impl Iterator for Grid {
 impl Display for Grid {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "\n\n#################################\n\n")?;
+        writeln!(f, "Scrollback")?;
         self.print_vec(&self.scrollback, f)?;
         writeln!(f, "-------------------------------------")?;
+        writeln!(f, "Rows")?;
         self.print_vec(&self.rows, f)?;
+        writeln!(f, "-------------------------------------")?;
+        writeln!(f, "Scrolldown")?;
+        self.print_vec(&self.scrolldown, f)?;
 
         Ok(())
     }
@@ -228,7 +243,7 @@ mod test {
         let mut g = Grid::new(2, 2);
         g[1][0].c = Some('a');
         assert!(g[0][0].c.is_none());
-        g.scroll_up();
+        g.scroll_up(false);
         assert!(g[0][0].c == Some('a'));
     }
 
