@@ -7,7 +7,7 @@ use std::{
 
 use ansi::Ansi;
 use gui::TurmGui;
-use terminal_gui_input::TerminalGuiInput;
+use terminal_gui_input::{TerminalGuiInput, TerminalGuiInputMessage};
 use terminal_io::TerminalIO;
 use turm::Turm;
 
@@ -62,11 +62,24 @@ fn main() {
                         });
                     });
 
-                    let (rtx, rrx) = mpsc::channel::<Vec<u8>>();
+                    let (rtx, rrx) = mpsc::channel::<TerminalGuiInputMessage>();
+                    let event_turm = turm_arc.clone();
                     // Thread that gets user input and sends it to the shell
                     thread::spawn(move || loop {
                         if let Ok(input) = rrx.recv() {
-                            _ = nix::unistd::write(write_fd.as_raw_fd(), &input);
+                            match input {
+                                TerminalGuiInputMessage::Text(text) => {
+                                    let _ = nix::unistd::write(write_fd.as_raw_fd(), &text);
+                                }
+                                TerminalGuiInputMessage::ScrollUp => {
+                                    let mut t = event_turm.lock().unwrap();
+                                    t.scroll_up();
+                                }
+                                TerminalGuiInputMessage::ScrollDown => {
+                                    let mut t = event_turm.lock().unwrap();
+                                    t.scroll_down();
+                                }
+                            }
                         }
                     });
 

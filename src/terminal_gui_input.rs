@@ -2,14 +2,20 @@ use std::sync::mpsc::Sender;
 
 use egui::{Event, InputState, Key, Modifiers};
 
+pub enum TerminalGuiInputMessage {
+    Text(Vec<u8>),
+    ScrollUp,
+    ScrollDown,
+}
+
 /// TerminalInput processes the input from the GUI and sends it back to the
 /// child terminal.
 pub struct TerminalGuiInput {
-    rtx: Sender<Vec<u8>>,
+    rtx: Sender<TerminalGuiInputMessage>,
 }
 
 impl TerminalGuiInput {
-    pub fn new(rtx: Sender<Vec<u8>>) -> Self {
+    pub fn new(rtx: Sender<TerminalGuiInputMessage>) -> Self {
         Self { rtx }
     }
 
@@ -67,14 +73,22 @@ impl TerminalGuiInput {
                     let n = key.name().chars().next().unwrap();
                     let mut m = n as u8;
                     m &= 0b1001_1111;
-                    let _ = self.rtx.send(vec![m]);
+                    let _ = self.rtx.send(TerminalGuiInputMessage::Text(vec![m]));
+                    None
+                }
+                Event::Scroll(vec) => {
+                    if vec.y > 0.0 {
+                        let _ = self.rtx.send(TerminalGuiInputMessage::ScrollDown);
+                    } else {
+                        let _ = self.rtx.send(TerminalGuiInputMessage::ScrollUp);
+                    }
                     None
                 }
                 _ => None,
             };
 
             if let Some(text) = text {
-                let _ = self.rtx.send(text.into());
+                let _ = self.rtx.send(TerminalGuiInputMessage::Text(text.into()));
             }
         }
     }
