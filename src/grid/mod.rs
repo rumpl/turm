@@ -81,7 +81,7 @@ impl Grid {
 
         if !text.is_empty() {
             let ts = TextSection {
-                text: text.clone(),
+                text,
                 style: current_style,
             };
             res.push(ts);
