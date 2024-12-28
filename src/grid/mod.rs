@@ -243,7 +243,7 @@ mod test {
         let mut g = Grid::new(2, 2);
         g[1][0].c = Some('a');
         assert!(g[0][0].c.is_none());
-        g.scroll_up(false);
+        g.scroll_up(true);
         assert!(g[0][0].c == Some('a'));
     }
 
