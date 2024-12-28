@@ -2,7 +2,6 @@ use std::{
     ops::DerefMut,
     os::fd::{AsRawFd, OwnedFd},
     sync::{Arc, Mutex},
-    thread,
     time::Duration,
 };
 
@@ -55,9 +54,7 @@ impl TerminalIO {
             let turm = turm1.deref_mut();
 
             for _ in events.iter() {
-                for _ in 0..30 {
-                    thread::sleep(Duration::new(0, 1_000));
-
+                loop {
                     let ret = nix::unistd::read(self.fd.as_raw_fd(), &mut buf);
                     if let Ok(s) = ret {
                         if s != 0 {
