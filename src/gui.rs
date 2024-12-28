@@ -135,6 +135,8 @@ impl eframe::App for TurmGui {
                 family: FontFamily::Monospace, //Name("berkeley-bold".into()),
             };
 
+            // println!("{}", turm.grid);
+
             let mut job = egui::text::LayoutJob::default();
             for section in turm.grid.sections() {
                 let fid = if section.style.bold {
