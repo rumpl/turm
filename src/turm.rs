@@ -70,7 +70,7 @@ impl Turm {
                 }
                 AnsiOutput::HideCursor => self.show_cursor = false,
                 AnsiOutput::ShowCursor => self.show_cursor = true,
-                AnsiOutput::ScrollDown => self.scroll_down(false),
+                AnsiOutput::ScrollDown => self.scroll_down(1, false),
                 AnsiOutput::Backspace => self.backspace(),
                 AnsiOutput::Sgr(c) => self.color(*c),
                 AnsiOutput::Bell => println!("DING DONG"),
@@ -109,7 +109,7 @@ impl Turm {
         self.move_cursor(0, self.cursor.pos.y + 1);
         if self.cursor.pos.y == self.lines {
             self.move_cursor(0, self.lines - 1);
-            self.scroll_up(true);
+            self.scroll_up(1, true);
         }
     }
 
@@ -126,7 +126,7 @@ impl Turm {
         } else {
             if self.needs_wrap {
                 self.move_cursor(0, self.lines - 1);
-                self.scroll_up(true);
+                self.scroll_up(1, true);
                 self.needs_wrap = false;
             }
 
@@ -134,7 +134,7 @@ impl Turm {
                 self.move_cursor(0, self.cursor.pos.y + 1);
                 if self.cursor.pos.y == self.lines {
                     self.move_cursor(0, self.lines - 1);
-                    self.scroll_up(true);
+                    self.scroll_up(1, true);
                 }
             }
 
@@ -206,11 +206,11 @@ impl Turm {
         self.cursor.pos.y = y;
     }
 
-    pub fn scroll_up(&mut self, force: bool) {
-        self.grid.scroll_up(force);
+    pub fn scroll_up(&mut self, delta: u32, force: bool) {
+        self.grid.scroll_up(delta, force);
     }
 
-    pub fn scroll_down(&mut self, force: bool) {
-        self.grid.scroll_down(force);
+    pub fn scroll_down(&mut self, delta: u32, force: bool) {
+        self.grid.scroll_down(delta, force);
     }
 }

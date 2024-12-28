@@ -4,8 +4,8 @@ use egui::{Event, InputState, Key, Modifiers};
 
 pub enum TerminalGuiInputMessage {
     Text(Vec<u8>),
-    ScrollUp,
-    ScrollDown,
+    ScrollUp(u32),
+    ScrollDown(u32),
 }
 
 /// TerminalInput processes the input from the GUI and sends it back to the
@@ -81,10 +81,15 @@ impl TerminalGuiInput {
                     delta,
                     modifiers: _,
                 } => {
+                    println!("Mouse wheel: {:?}", delta);
                     if delta.y > 0.0 {
-                        let _ = self.rtx.send(TerminalGuiInputMessage::ScrollDown);
+                        let _ = self
+                            .rtx
+                            .send(TerminalGuiInputMessage::ScrollDown(delta.y as u32));
                     } else {
-                        let _ = self.rtx.send(TerminalGuiInputMessage::ScrollUp);
+                        let _ = self
+                            .rtx
+                            .send(TerminalGuiInputMessage::ScrollUp(delta.y.abs() as u32));
                     }
                     None
                 }

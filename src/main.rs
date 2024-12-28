@@ -72,13 +72,13 @@ fn main() {
                                     let _ =
                                         nix::unistd::write(write_fd.try_clone().unwrap(), &text);
                                 }
-                                TerminalGuiInputMessage::ScrollUp => {
+                                TerminalGuiInputMessage::ScrollUp(delta) => {
                                     let mut t = event_turm.lock().unwrap();
-                                    t.scroll_up(false);
+                                    t.scroll_up(delta, false);
                                 }
-                                TerminalGuiInputMessage::ScrollDown => {
+                                TerminalGuiInputMessage::ScrollDown(delta) => {
                                     let mut t = event_turm.lock().unwrap();
-                                    t.scroll_down(false);
+                                    t.scroll_down(delta, false);
                                 }
                             }
                         }
