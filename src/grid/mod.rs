@@ -75,30 +75,31 @@ impl Grid {
         let mut res = vec![];
 
         let mut current_style = self.rows[0][0].style;
-        let mut text = String::new();
+        // let mut text = String::new();
+        let mut text_array = vec![];
 
         for row in &self.rows {
             for col in &row.inner {
                 if col.style != current_style {
                     res.push(TextSection {
-                        text,
+                        text: text_array.iter().collect(),
                         style: current_style,
                     });
-                    text = String::new();
+                    text_array = vec![];
                     current_style = col.style;
                 }
                 if let Some(c) = col.c {
-                    text.push_str(&String::from(c));
+                    text_array.push(c);
                 } else {
-                    text.push(' ');
+                    text_array.push(' ');
                 }
             }
-            text.push('\n');
+            text_array.push('\n');
         }
 
-        if !text.is_empty() {
+        if !text_array.is_empty() {
             let ts = TextSection {
-                text,
+                text: text_array.iter().collect(),
                 style: current_style,
             };
             res.push(ts);

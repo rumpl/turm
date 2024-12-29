@@ -81,7 +81,6 @@ impl TerminalGuiInput {
                     delta,
                     modifiers: _,
                 } => {
-                    println!("Mouse wheel: {:?}", delta);
                     if delta.y > 0.0 {
                         let _ = self
                             .rtx

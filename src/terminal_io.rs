@@ -58,7 +58,9 @@ impl TerminalIO {
                     let ret = nix::unistd::read(self.fd.as_raw_fd(), &mut buf);
                     if let Ok(s) = ret {
                         if s != 0 {
-                            let ansi_res = self.ansi.push(&buf[0..s]);
+                            let n: Vec<char> =
+                                String::from_utf8_lossy(&buf[0..s]).chars().collect();
+                            let ansi_res = self.ansi.push(&n);
                             turm.parse(ansi_res);
                         } else {
                             break;

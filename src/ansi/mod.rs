@@ -78,7 +78,7 @@ impl OscParser {
     }
 
     fn push(&mut self, b: u8) -> Option<Result<OscParseResult, OscParserError>> {
-        if b == ansi_codes::STRING_TERMINATOR {
+        if b == ansi_codes::STRING_TERMINATOR || b == ansi_codes::BEL || b == ansi_codes::OSC_END {
             return Some(Ok(OscParseResult {}));
         }
 
@@ -203,7 +203,7 @@ impl From<usize> for ClearMode {
 
 #[derive(Debug)]
 pub enum AnsiOutput {
-    Text(Vec<u8>),
+    Text(Vec<char>),
     Backspace,
     ClearToEndOfLine(ClearMode),
     ClearToEOS,
@@ -230,25 +230,26 @@ impl Ansi {
         }
     }
 
-    pub fn push(&mut self, data: &[u8]) -> Vec<AnsiOutput> {
+    pub fn push(&mut self, data: &[char]) -> Vec<AnsiOutput> {
         let mut res = vec![];
-        let mut text_output = Vec::new();
+        let mut text_output: Vec<char> = Vec::new();
 
         for b in data {
             match &mut self.state {
                 AnsiState::Empty => {
-                    if *b == ansi_codes::ESC {
+                    if *b as u8 == ansi_codes::ESC {
                         self.state = AnsiState::Escape;
                         continue;
                     }
-                    if *b == ansi_codes::BS {
+                    if *b as u8 == ansi_codes::BS {
                         if !text_output.is_empty() {
-                            res.push(AnsiOutput::Text(std::mem::take(&mut text_output)));
+                            res.push(AnsiOutput::Text(text_output.clone()));
+                            text_output.clear();
                         }
                         res.push(AnsiOutput::Backspace);
                         continue;
                     }
-                    if *b == ansi_codes::BEL {
+                    if *b as u8 == ansi_codes::BEL {
                         res.push(AnsiOutput::Bell);
                         continue;
                     }
@@ -256,9 +257,10 @@ impl Ansi {
                 }
                 AnsiState::Escape => {
                     if !text_output.is_empty() {
-                        res.push(AnsiOutput::Text(std::mem::take(&mut text_output)));
+                        res.push(AnsiOutput::Text(text_output.clone()));
+                        text_output.clear();
                     }
-                    match *b {
+                    match *b as u8 {
                         ansi_codes::ESC_START => {
                             self.state = AnsiState::Csi(CSIParser::new());
                         }
@@ -281,15 +283,15 @@ impl Ansi {
                             self.state = AnsiState::Empty;
                         }
                         _ => {
-                            let first = (b & 0b0111_0000) >> 4;
-                            let second = b & 0b0000_1111;
-                            println!("unknown ansi {} {:#02x} {first}/{second}", *b as char, b);
+                            let first = ((*b as u8) & 0b0111_0000) >> 4;
+                            let second = (*b as u8) & 0b0000_1111;
+                            println!("unknown ansi {} {:#02x} {first}/{second}", { *b }, *b as u8);
                             self.state = AnsiState::Empty;
                         }
                     }
                 }
                 AnsiState::Hash => {
-                    match *b {
+                    match *b as u8 {
                         ansi_codes::FILL_WITH_E => {
                             res.push(AnsiOutput::FillWithE);
                         }
@@ -301,15 +303,16 @@ impl Ansi {
                     self.state = AnsiState::Empty;
                 }
                 AnsiState::Osc(parser) => {
-                    if parser.push(*b).is_some() {
+                    if parser.push(*b as u8).is_some() {
+                        self.state = AnsiState::Empty;
                         println!("parsed");
+                    } else {
+                        // osc not finished parsing, do nothing
+                        // self.state = AnsiState::Empty;
+                        println!("parser osc");
                     }
-
-                    // osc not finished parsing, do nothing
-                    self.state = AnsiState::Empty;
-                    println!("parser osc");
                 }
-                AnsiState::Csi(parser) => match parser.push(*b) {
+                AnsiState::Csi(parser) => match parser.push(*b as u8) {
                     Some(Ok(d)) => {
                         #[allow(clippy::single_match)]
                         match d.func {

@@ -113,15 +113,15 @@ impl Turm {
         }
     }
 
-    pub fn input(&mut self, c: u8) {
-        if c == b'\n' {
+    pub fn input(&mut self, c: char) {
+        if c == '\n' {
             self.move_cursor(self.cursor.pos.x, self.cursor.pos.y + 1);
             if self.cursor.pos.y == self.lines {
                 self.needs_wrap = true;
             }
-        } else if c == b'\r' {
+        } else if c == '\r' {
             self.move_cursor(0, self.cursor.pos.y);
-        } else if c == b'\t' {
+        } else if c == '\t' {
             self.move_cursor(self.cursor.pos.x + 4, self.cursor.pos.y);
         } else {
             if self.needs_wrap {
@@ -138,7 +138,7 @@ impl Turm {
                 }
             }
 
-            self.grid[self.cursor.pos.y][self.cursor.pos.x].c = Some(c as char);
+            self.grid[self.cursor.pos.y][self.cursor.pos.x].c = Some(c);
             self.grid[self.cursor.pos.y][self.cursor.pos.x].style = self.current_style;
 
             self.move_cursor(self.cursor.pos.x + 1, self.cursor.pos.y);
