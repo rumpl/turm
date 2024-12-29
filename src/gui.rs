@@ -115,7 +115,9 @@ impl eframe::App for TurmGui {
             if turm.title.is_empty() {
                 ctx.send_viewport_cmd(ViewportCommand::Title(String::from("💩 Turm 💩")));
             } else {
-                ctx.send_viewport_cmd(ViewportCommand::Title(turm.title.clone()));
+                ctx.send_viewport_cmd(ViewportCommand::Title(
+                    "💩 ".to_owned() + &turm.title.clone() + " 💩",
+                ));
             }
 
             if w != self.w || h != self.h {
