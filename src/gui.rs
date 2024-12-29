@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{font, terminal_gui_input::TerminalGuiInput, turm::Turm};
-use egui::{Color32, FontFamily, FontId, Frame, Margin, Rect, Stroke};
+use egui::{Color32, FontFamily, FontId, Frame, Margin, Rect, Stroke, ViewportCommand};
 
 fn resize(fd: RawFd, cols: usize, rows: usize, font_size: f32, width: f32) {
     let ws = nix::pty::Winsize {
@@ -111,6 +111,12 @@ impl eframe::App for TurmGui {
 
             let mut turm1 = self.turm.lock().unwrap();
             let turm = turm1.deref_mut();
+
+            if turm.title.is_empty() {
+                ctx.send_viewport_cmd(ViewportCommand::Title(String::from("💩 Turm 💩")));
+            } else {
+                ctx.send_viewport_cmd(ViewportCommand::Title(turm.title.clone()));
+            }
 
             if w != self.w || h != self.h {
                 turm.grid.resize(w, h);

@@ -25,6 +25,7 @@ pub struct Turm {
     pub lines: usize,
     pub columns: usize,
     needs_wrap: bool,
+    pub title: String,
 }
 
 impl Turm {
@@ -37,6 +38,7 @@ impl Turm {
             columns,
             needs_wrap: false,
             show_cursor: true,
+            title: String::new(),
         }
     }
 
@@ -46,6 +48,11 @@ impl Turm {
                 AnsiOutput::Text(str) => {
                     for c in str {
                         self.input(*c);
+                    }
+                }
+                AnsiOutput::Title(title) => {
+                    if !title.is_empty() {
+                        self.title = title.clone();
                     }
                 }
                 AnsiOutput::ClearToEndOfLine(_mode) => self.clear_to_end_of_line(),

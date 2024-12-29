@@ -64,22 +64,55 @@ impl CSIParser {
     }
 }
 
-struct OscParseResult {}
+struct OscParseResult {
+    title: String,
+}
+
+#[derive(Debug, PartialEq)]
+enum OscState {
+    Empty,
+    TitleStart,
+    Title,
+}
 
 #[derive(Debug)]
 enum OscParserError {}
 
 #[derive(Debug)]
-struct OscParser {}
+struct OscParser {
+    title: Vec<char>,
+    state: OscState,
+}
 
 impl OscParser {
     fn new() -> Self {
-        Self {}
+        Self {
+            title: Vec::new(),
+            state: OscState::Empty,
+        }
     }
 
-    fn push(&mut self, b: u8) -> Option<Result<OscParseResult, OscParserError>> {
-        if b == ansi_codes::STRING_TERMINATOR || b == ansi_codes::BEL || b == ansi_codes::OSC_END {
-            return Some(Ok(OscParseResult {}));
+    fn push(&mut self, b: char) -> Option<Result<OscParseResult, OscParserError>> {
+        let c = b as u8;
+
+        if c == ansi_codes::STRING_TERMINATOR || c == ansi_codes::BEL || c == ansi_codes::OSC_END {
+            return Some(Ok(OscParseResult {
+                title: self.title.iter().collect(),
+            }));
+        }
+
+        if self.state == OscState::Title {
+            self.title.push(b);
+        }
+
+        if c == b'2' {
+            self.state = OscState::TitleStart;
+            return None;
+        }
+
+        if self.state == OscState::TitleStart {
+            self.state = OscState::Title;
+            return None;
         }
 
         None
@@ -204,6 +237,7 @@ impl From<usize> for ClearMode {
 #[derive(Debug)]
 pub enum AnsiOutput {
     Text(Vec<char>),
+    Title(String),
     Backspace,
     ClearToEndOfLine(ClearMode),
     ClearToEOS,
@@ -303,13 +337,9 @@ impl Ansi {
                     self.state = AnsiState::Empty;
                 }
                 AnsiState::Osc(parser) => {
-                    if parser.push(*b as u8).is_some() {
+                    if let Some(Ok(d)) = parser.push(*b) {
+                        res.push(AnsiOutput::Title(d.title.chars().collect()));
                         self.state = AnsiState::Empty;
-                        println!("parsed");
-                    } else {
-                        // osc not finished parsing, do nothing
-                        // self.state = AnsiState::Empty;
-                        println!("parser osc");
                     }
                 }
                 AnsiState::Csi(parser) => match parser.push(*b as u8) {
