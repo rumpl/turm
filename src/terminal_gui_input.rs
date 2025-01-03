@@ -76,19 +76,15 @@ impl TerminalGuiInput {
                     let _ = self.rtx.send(TerminalGuiInputMessage::Text(vec![m]));
                     None
                 }
-                Event::MouseWheel {
-                    unit: _,
-                    delta,
-                    modifiers: _,
-                } => {
-                    if delta.y > 0.0 {
+                Event::Scroll(vec) => {
+                    if vec.y > 0.0 {
                         let _ = self
                             .rtx
-                            .send(TerminalGuiInputMessage::ScrollDown(delta.y as u32));
+                            .send(TerminalGuiInputMessage::ScrollDown(vec.y as u32));
                     } else {
                         let _ = self
                             .rtx
-                            .send(TerminalGuiInputMessage::ScrollUp(delta.y.abs() as u32));
+                            .send(TerminalGuiInputMessage::ScrollUp(vec.y.abs() as u32));
                     }
                     None
                 }

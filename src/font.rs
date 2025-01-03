@@ -19,10 +19,9 @@ pub fn load() -> FontDefinitions {
         Handle::Path { path, .. } => read(path).unwrap(),
     };
 
-    fonts.font_data.insert(
-        f.full_name(),
-        std::sync::Arc::new(FontData::from_owned(buf)),
-    );
+    fonts
+        .font_data
+        .insert(f.full_name(), FontData::from_owned(buf));
 
     if let Some(vec) = fonts.families.get_mut(&FontFamily::Monospace) {
         vec.push(f.full_name().to_owned());

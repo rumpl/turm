@@ -1,12 +1,11 @@
 use std::{
-    ffi::CStr,
+    os::fd::AsRawFd,
     sync::{mpsc, Arc, Mutex},
     thread,
 };
 
 use ansi::Ansi;
 use gui::TurmGui;
-use nix::pty::ForkptyResult;
 use terminal_gui_input::{TerminalGuiInput, TerminalGuiInputMessage};
 use terminal_io::TerminalIO;
 use turm::Turm;
@@ -23,8 +22,8 @@ mod turm;
 fn main() {
     let result = unsafe { nix::pty::forkpty(None, None).unwrap() };
 
-    match result {
-        ForkptyResult::Parent { child, master } => {
+    match result.fork_result {
+        nix::unistd::ForkResult::Parent { child } => {
             std::thread::spawn(move || {
                 let Ok(res) = nix::sys::wait::waitpid(child, None) else {
                     std::process::exit(-1);
@@ -40,7 +39,7 @@ fn main() {
                 "💩 Turm 💩",
                 options,
                 Box::new(|cc| {
-                    let fd = master;
+                    let fd = result.master;
 
                     let cols: usize = 92;
                     let rows: usize = 34;
@@ -69,8 +68,7 @@ fn main() {
                         if let Ok(input) = rrx.recv() {
                             match input {
                                 TerminalGuiInputMessage::Text(text) => {
-                                    let _ =
-                                        nix::unistd::write(write_fd.try_clone().unwrap(), &text);
+                                    let _ = nix::unistd::write(write_fd.as_raw_fd(), &text);
                                 }
                                 TerminalGuiInputMessage::ScrollUp(delta) => {
                                     let mut t = event_turm.lock().unwrap();
@@ -84,23 +82,22 @@ fn main() {
                         }
                     });
 
-                    Ok(Box::<TurmGui>::new(TurmGui::new(
+                    Box::<TurmGui>::new(TurmGui::new(
                         cc,
                         fd,
                         turm_arc,
                         TerminalGuiInput::new(rtx),
                         cols,
                         rows,
-                    )))
+                    ))
                 }),
             );
         }
 
-        ForkptyResult::Child => {
+        nix::unistd::ForkResult::Child => {
             std::env::set_var("TERM", "turm");
-            // std::env::set_var("TERMINFO", "/home/rumpl/dev/turm/res");
-            std::env::set_var("TERMINFO", "/Users/rumpl/hack/turm/res");
-            let command = CStr::from_bytes_with_nul(b"/bin/zsh\0").unwrap();
+            std::env::set_var("TERMINFO", "/home/rumpl/dev/turm/res");
+            let command = c"/bin/bash";
             let args = [command];
             let _ = nix::unistd::execvp(command, &args);
         }
