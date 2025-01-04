@@ -60,31 +60,35 @@ fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
         family: FontFamily::Monospace, //Name("berkeley".into()),
     };
     ctx.fonts(move |fonts| {
-        let rect = fonts
-            .layout(
-                "qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer"
-                    .to_string(),
-                font_id.clone(),
-                Color32::WHITE,
-                f32::INFINITY,
-            )
-            .rect;
+        let mut job = egui::text::LayoutJob {
+            round_output_size_to_nearest_ui_point: false,
+            ..Default::default()
+        };
 
+        let tf = egui::text::TextFormat {
+            font_id,
+            ..Default::default()
+        };
+
+        let text = "qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer\n\
+                 qwerqwerqwerqwer";
+        job.append(text, 0.0, tf);
+
+        let rect = fonts.layout_job(job).rect;
         let w = rect.width() / 16.0;
         let h = rect.height() / 16.0;
 
@@ -143,7 +147,10 @@ impl eframe::App for TurmGui {
                 family: FontFamily::Monospace, //Name("berkeley-bold".into()),
             };
 
-            let mut job = egui::text::LayoutJob::default();
+            let mut job = egui::text::LayoutJob {
+                round_output_size_to_nearest_ui_point: false,
+                ..Default::default()
+            };
             for section in turm.grid.sections() {
                 let fid = if section.style.bold {
                     bold_font_id.clone()

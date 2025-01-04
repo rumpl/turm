@@ -82,14 +82,14 @@ fn main() {
                         }
                     });
 
-                    Box::<TurmGui>::new(TurmGui::new(
+                    Ok(Box::<TurmGui>::new(TurmGui::new(
                         cc,
                         fd,
                         turm_arc,
                         TerminalGuiInput::new(rtx),
                         cols,
                         rows,
-                    ))
+                    )))
                 }),
             );
         }
