@@ -69,6 +69,7 @@ fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
 
         let tf = egui::text::TextFormat {
             font_id,
+            line_height: Some(16.0),
             ..Default::default()
         };
 
@@ -173,6 +174,7 @@ impl eframe::App for TurmGui {
                             background: section.style.bg.into(),
                             underline,
                             italics: section.style.italics,
+                            line_height: Some(16.0),
                             ..Default::default()
                         };
 
