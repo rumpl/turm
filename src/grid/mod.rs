@@ -69,43 +69,57 @@ impl Grid {
     }
 
     /// Returns the different style sections to render.
-    /// Note: this thing allocates too much, make it so that it returns ranges
-    /// instead and stop allocating things in a tight renderer loop.
-    pub fn sections(&self) -> Vec<TextSection> {
+    pub fn sections(&self) -> Sections {
         let mut res = vec![];
 
         let mut current_style = self.rows[0][0].style;
-        // let mut text = String::new();
-        let mut text_array = vec![];
+        let mut whole_text = Vec::with_capacity(self.rows.len() * self.columns + self.rows.len());
 
+        let mut offset = 0;
+        let mut len = 0;
         for row in &self.rows {
             for col in &row.inner {
                 if col.style != current_style {
                     res.push(TextSection {
-                        text: text_array.iter().collect(),
                         style: current_style,
+                        offset,
+                        len: offset + len,
                     });
-                    text_array = vec![];
+                    offset += len;
+                    len = 0;
                     current_style = col.style;
                 }
                 if let Some(c) = col.c {
-                    text_array.push(c);
+                    whole_text.push(c);
                 } else {
-                    text_array.push(' ');
+                    whole_text.push(' ');
                 }
+                len += 1;
             }
-            text_array.push('\n');
+            whole_text.push('\n');
+            len += 1;
         }
 
-        if !text_array.is_empty() {
-            let ts = TextSection {
-                text: text_array.iter().collect(),
+        if len != whole_text.len() {
+            res.push(TextSection {
                 style: current_style,
-            };
-            res.push(ts);
+                offset,
+                len: whole_text.len(),
+            });
         }
 
-        res
+        if res.is_empty() {
+            res.push(TextSection {
+                style: current_style,
+                offset: 0,
+                len: whole_text.len(),
+            });
+        }
+
+        Sections {
+            text: whole_text.iter().collect(),
+            sections: res,
+        }
     }
 
     pub fn resize(&mut self, new_columns: usize, new_lines: usize) {
@@ -193,9 +207,16 @@ impl Grid {
 }
 
 #[derive(Debug)]
-pub struct TextSection {
+pub struct Sections {
     pub text: String,
+    pub sections: Vec<TextSection>,
+}
+
+#[derive(Debug)]
+pub struct TextSection {
     pub style: Style,
+    pub offset: usize,
+    pub len: usize,
 }
 
 impl Index<usize> for Grid {

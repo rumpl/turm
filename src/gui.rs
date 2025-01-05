@@ -6,7 +6,9 @@ use std::{
 };
 
 use crate::{font, terminal_gui_input::TerminalGuiInput, turm::Turm};
-use egui::{Color32, FontFamily, FontId, Frame, Margin, Rect, Stroke, ViewportCommand};
+use egui::{
+    text::LayoutSection, Color32, FontFamily, FontId, Frame, Margin, Rect, Stroke, ViewportCommand,
+};
 
 fn resize(fd: RawFd, cols: usize, rows: usize, font_size: f32, width: f32) {
     let ws = nix::pty::Winsize {
@@ -147,33 +149,43 @@ impl eframe::App for TurmGui {
                 family: FontFamily::Monospace, //Name("berkeley-bold".into()),
             };
 
-            let mut job = egui::text::LayoutJob {
+            let sections = turm.grid.sections();
+            let job = egui::text::LayoutJob {
+                text: sections.text,
+                sections: sections
+                    .sections
+                    .iter()
+                    .map(|section| {
+                        let fid = if section.style.bold {
+                            bold_font_id.clone()
+                        } else {
+                            font_id.clone()
+                        };
+
+                        let underline = Stroke {
+                            color: section.style.fg.into(),
+                            width: if section.style.underline { 4.0 } else { 0.0 },
+                        };
+
+                        let tf = egui::text::TextFormat {
+                            font_id: fid,
+                            color: section.style.fg.into(),
+                            background: section.style.bg.into(),
+                            underline,
+                            italics: section.style.italics,
+                            ..Default::default()
+                        };
+
+                        LayoutSection {
+                            leading_space: 0.0,
+                            byte_range: (section.offset..section.len),
+                            format: tf,
+                        }
+                    })
+                    .collect(),
                 round_output_size_to_nearest_ui_point: false,
                 ..Default::default()
             };
-            for section in turm.grid.sections() {
-                let fid = if section.style.bold {
-                    bold_font_id.clone()
-                } else {
-                    font_id.clone()
-                };
-
-                let underline = Stroke {
-                    color: section.style.fg.into(),
-                    width: if section.style.underline { 4.0 } else { 0.0 },
-                };
-
-                let tf = egui::text::TextFormat {
-                    font_id: fid,
-                    color: section.style.fg.into(),
-                    background: section.style.bg.into(),
-                    underline,
-                    italics: section.style.italics,
-                    ..Default::default()
-                };
-
-                job.append(&section.text, 0.0, tf);
-            }
 
             let res = ui.label(job);
 
