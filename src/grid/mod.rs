@@ -73,10 +73,12 @@ impl Grid {
         let mut res = vec![];
 
         let mut current_style = self.rows[0][0].style;
-        let mut whole_text = Vec::with_capacity(self.rows.len() * self.columns + self.rows.len());
+        let mut whole_text =
+            Vec::with_capacity(4 * (self.rows.len() * self.columns + self.rows.len()));
 
         let mut offset = 0;
         let mut len = 0;
+        let mut total_len = 0;
         for row in &self.rows {
             for col in &row.inner {
                 if col.style != current_style {
@@ -91,20 +93,24 @@ impl Grid {
                 }
                 if let Some(c) = col.c {
                     whole_text.push(c);
+                    len += c.len_utf8();
+                    total_len += c.len_utf8();
                 } else {
                     whole_text.push(' ');
+                    len += 1;
+                    total_len += 1;
                 }
-                len += 1;
             }
             whole_text.push('\n');
             len += 1;
+            total_len += 1;
         }
 
         if len != whole_text.len() {
             res.push(TextSection {
                 style: current_style,
                 offset,
-                len: whole_text.len(),
+                len: total_len,
             });
         }
 
@@ -112,7 +118,7 @@ impl Grid {
             res.push(TextSection {
                 style: current_style,
                 offset: 0,
-                len: whole_text.len(),
+                len: total_len,
             });
         }
 
