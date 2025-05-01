@@ -199,6 +199,22 @@ impl eframe::App for TurmGui {
                 );
                 let size = egui::vec2(width, height);
                 painter.rect_filled(Rect::from_min_size(pos, size), 0.0, Color32::WHITE);
+
+                // Get character at cursor position and draw it in black on top of the cursor
+                if turm.cursor.pos.y < turm.lines && turm.cursor.pos.x < turm.columns {
+                    if let Some(c) = turm.grid[turm.cursor.pos.y][turm.cursor.pos.x].c {
+                        painter.text(
+                            pos,
+                            egui::Align2::LEFT_TOP,
+                            c.to_string(),
+                            FontId {
+                                size: self.font_size,
+                                family: FontFamily::Monospace,
+                            },
+                            Color32::BLACK,
+                        );
+                    }
+                }
             }
             drop(turm1);
         });
