@@ -442,6 +442,10 @@ impl Ansi {
                                 let amount = if params.is_empty() { 1 } else { params[0] };
                                 res.push(AnsiOutput::DeleteCharacters(amount));
                             }
+                            ansi_codes::DCS => {
+                                // Just ignore DCS sequences for now
+                                // These are used by nvim but don't need special handling
+                            }
                             _ => {
                                 let first = (d.func & 0b0111_0000) >> 4;
                                 let second = d.func & 0b0000_1111;

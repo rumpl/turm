@@ -29,6 +29,7 @@ pub const DELETE_CHARACTER: u8 = b'P';
 pub const CURSOR_POSITION: u8 = b'H';
 pub const HVP: u8 = ANSI_CODE!(6, 6);
 pub const CURSOR_HORIZONTAL_POSITION: u8 = b'G';
+pub const DCS: u8 = b'p'; // Device Control String
 
 pub const NEXT_LINE: u8 = b'E';
 pub const CURSOR_DOWNWARD: u8 = b'D';
