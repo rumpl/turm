@@ -1,31 +1,20 @@
 use std::{
-    io::Error,
     ops::DerefMut,
-    os::fd::{AsRawFd, OwnedFd, RawFd},
+    os::fd::{AsRawFd, OwnedFd},
     sync::{Arc, Mutex},
+    thread,
 };
 
-use crate::{font, terminal_gui_input::TerminalGuiInput, turm::Turm};
+use crate::{
+    ansi::Ansi, font, gui::Gui, terminal_gui_input::TerminalGuiInput, terminal_io::TerminalIO,
+    turm::Turm,
+};
+
 use egui::{
     text::LayoutSection, Color32, FontFamily, FontId, Frame, Margin, Rect, Stroke, ViewportCommand,
 };
 
-fn resize(fd: RawFd, cols: usize, rows: usize, font_size: f32, width: f32) {
-    let ws = nix::pty::Winsize {
-        ws_col: cols as u16,
-        ws_row: rows as u16,
-        ws_xpixel: cols as u16 * width as u16,
-        ws_ypixel: rows as u16 * font_size as u16,
-    };
-
-    let res = unsafe { libc::ioctl(fd, libc::TIOCSWINSZ, &ws as *const _) };
-    if res < 0 {
-        println!("ioctl TIOCSWINSZ failed: {}", Error::last_os_error());
-        std::process::exit(1);
-    }
-}
-
-pub struct TurmGui {
+pub struct EguiImpl {
     terminal_gui_input: TerminalGuiInput,
     turm: Arc<Mutex<Turm>>,
     w: usize,
@@ -34,16 +23,14 @@ pub struct TurmGui {
     font_size: f32,
 }
 
-impl TurmGui {
-    pub fn new(
-        cc: &eframe::CreationContext<'_>,
-        fd: OwnedFd,
-        turm: Arc<Mutex<Turm>>,
-        terminal_gui_input: TerminalGuiInput,
-        cols: usize,
-        rows: usize,
-    ) -> Self {
-        cc.egui_ctx.set_fonts(font::load());
+impl Gui for EguiImpl {
+    fn new(fd: OwnedFd, turm: Arc<Mutex<Turm>>, cols: usize, rows: usize) -> Self {
+        let turm = turm.clone();
+        let fd = fd.try_clone().unwrap();
+        let write_fd = fd.try_clone().unwrap();
+
+        let event_turm = turm.clone();
+        let terminal_gui_input = TerminalGuiInput::new(event_turm, write_fd);
 
         Self {
             terminal_gui_input,
@@ -54,52 +41,85 @@ impl TurmGui {
             font_size: 12.0,
         }
     }
+
+    fn run(self) {
+        // Create a context for egui to request repaints
+        let egui_ctx = egui::Context::default();
+        let rs = egui_ctx.clone();
+
+        let turm = self.turm.clone();
+        let fd = self.fd.try_clone().unwrap();
+
+        // Thread that reads output from the shell and sends it to the gui
+        thread::spawn(move || {
+            let ansi = Ansi::new();
+            let mut terminal_io = TerminalIO::new(ansi, fd, turm);
+            terminal_io.start_io(|| {
+                rs.request_repaint();
+            });
+        });
+
+        let native_options = eframe::NativeOptions::default();
+        eframe::run_native(
+            "Turm",
+            native_options,
+            Box::new(|cc| Ok(Box::new(self.with_creation_context(cc)))),
+        )
+        .expect("Failed to start eframe");
+    }
 }
 
-fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
-    let font_id = FontId {
-        size: font_size,
-        family: FontFamily::Monospace, //Name("berkeley".into()),
-    };
-    ctx.fonts(move |fonts| {
-        let mut job = egui::text::LayoutJob {
-            round_output_size_to_nearest_ui_point: false,
-            ..Default::default()
+impl EguiImpl {
+    fn with_creation_context(self, cc: &eframe::CreationContext<'_>) -> Self {
+        cc.egui_ctx.set_fonts(font::load());
+        self
+    }
+
+    fn get_char_size(ctx: &egui::Context, font_size: f32) -> (f32, f32) {
+        let font_id = FontId {
+            size: font_size,
+            family: FontFamily::Monospace,
         };
+        ctx.fonts(move |fonts| {
+            let mut job = egui::text::LayoutJob {
+                round_output_size_to_nearest_ui_point: false,
+                ..Default::default()
+            };
 
-        let tf = egui::text::TextFormat {
-            font_id,
-            line_height: Some(16.0),
-            ..Default::default()
-        };
+            let tf = egui::text::TextFormat {
+                font_id,
+                line_height: Some(16.0),
+                ..Default::default()
+            };
 
-        let text = "qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer\n\
-                 qwerqwerqwerqwer";
-        job.append(text, 0.0, tf);
+            let text = "qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer\n\
+                    qwerqwerqwerqwer";
+            job.append(text, 0.0, tf);
 
-        let rect = fonts.layout_job(job).rect;
-        let w = rect.width() / 16.0;
-        let h = rect.height() / 16.0;
+            let rect = fonts.layout_job(job).rect;
+            let w = rect.width() / 16.0;
+            let h = rect.height() / 16.0;
 
-        (w, h)
-    })
+            (w, h)
+        })
+    }
 }
 
-impl eframe::App for TurmGui {
+impl eframe::App for EguiImpl {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let frame = egui::CentralPanel::default();
         let frame = frame.frame(Frame {
@@ -112,7 +132,7 @@ impl eframe::App for TurmGui {
             ..Default::default()
         });
         frame.show(ctx, |ui| {
-            let (width, height) = get_char_size(ctx, self.font_size);
+            let (width, height) = Self::get_char_size(ctx, self.font_size);
             let w = (ui.available_width() / width) as usize;
             let h = (ui.available_height() / height) as usize;
 
@@ -134,7 +154,7 @@ impl eframe::App for TurmGui {
                 self.w = w;
                 self.h = h;
 
-                resize(self.fd.as_raw_fd(), self.w, self.h, self.font_size, width);
+                crate::gui::resize(self.fd.as_raw_fd(), self.w, self.h, self.font_size, width);
             }
 
             ui.input(|input_state| {
@@ -143,11 +163,11 @@ impl eframe::App for TurmGui {
 
             let font_id = FontId {
                 size: self.font_size,
-                family: FontFamily::Monospace, //Name("berkeley".into()),
+                family: FontFamily::Monospace,
             };
             let bold_font_id = FontId {
                 size: self.font_size,
-                family: FontFamily::Monospace, //Name("berkeley-bold".into()),
+                family: FontFamily::Monospace,
             };
 
             let sections = turm.grid.sections();

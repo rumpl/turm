@@ -1,13 +1,7 @@
-use std::{
-    os::fd::AsRawFd,
-    sync::{mpsc, Arc, Mutex},
-    thread,
-};
+use std::sync::{Arc, Mutex};
 
-use ansi::Ansi;
-use gui::TurmGui;
-use terminal_gui_input::{TerminalGuiInput, TerminalGuiInputMessage};
-use terminal_io::TerminalIO;
+use gui::egui::EguiImpl;
+use gui::Gui;
 use turm::Turm;
 
 mod ansi;
@@ -34,64 +28,16 @@ fn main() {
                 }
             });
 
-            let options = eframe::NativeOptions::default();
-            _ = eframe::run_native(
-                "💩 Turm 💩",
-                options,
-                Box::new(|cc| {
-                    let fd = result.master;
+            let fd = result.master;
 
-                    let cols: usize = 92;
-                    let rows: usize = 34;
+            let cols: usize = 92;
+            let rows: usize = 34;
 
-                    let rs = cc.egui_ctx.clone();
+            let turm_arc = Arc::new(Mutex::new(Turm::new(cols, rows)));
 
-                    let write_fd = fd.try_clone().unwrap();
-                    let read_fd = fd.try_clone().unwrap();
-
-                    let turm_arc = Arc::new(Mutex::new(Turm::new(cols, rows)));
-
-                    let turm = turm_arc.clone();
-                    // Thread that reads output from the shell and sends it to the gui
-                    thread::spawn(move || {
-                        let ansi = Ansi::new();
-                        let mut terminal_io = TerminalIO::new(ansi, read_fd, turm);
-                        terminal_io.start_io(|| {
-                            rs.request_repaint();
-                        });
-                    });
-
-                    let (rtx, rrx) = mpsc::channel::<TerminalGuiInputMessage>();
-                    let event_turm = turm_arc.clone();
-                    // Thread that gets user input and sends it to the shell
-                    thread::spawn(move || loop {
-                        if let Ok(input) = rrx.recv() {
-                            match input {
-                                TerminalGuiInputMessage::Text(text) => {
-                                    let _ = nix::unistd::write(write_fd.as_raw_fd(), &text);
-                                }
-                                TerminalGuiInputMessage::ScrollUp(delta) => {
-                                    let mut t = event_turm.lock().unwrap();
-                                    t.scroll_up(delta, false);
-                                }
-                                TerminalGuiInputMessage::ScrollDown(delta) => {
-                                    let mut t = event_turm.lock().unwrap();
-                                    t.scroll_down(delta, false);
-                                }
-                            }
-                        }
-                    });
-
-                    Ok(Box::<TurmGui>::new(TurmGui::new(
-                        cc,
-                        fd,
-                        turm_arc,
-                        TerminalGuiInput::new(rtx),
-                        cols,
-                        rows,
-                    )))
-                }),
-            );
+            // Create and run the GUI implementation
+            let gui = EguiImpl::new(fd, turm_arc, cols, rows);
+            gui.run();
         }
 
         nix::unistd::ForkResult::Child => {

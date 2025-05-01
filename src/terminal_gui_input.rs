@@ -1,6 +1,15 @@
-use std::sync::mpsc::Sender;
+use std::{
+    os::fd::{AsRawFd, OwnedFd},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc, Mutex,
+    },
+    thread,
+};
 
 use egui::{Event, InputState, Key, Modifiers};
+
+use crate::turm::Turm;
 
 pub enum TerminalGuiInputMessage {
     Text(Vec<u8>),
@@ -11,12 +20,52 @@ pub enum TerminalGuiInputMessage {
 /// TerminalInput processes the input from the GUI and sends it back to the
 /// child terminal.
 pub struct TerminalGuiInput {
-    rtx: Sender<TerminalGuiInputMessage>,
+    write_fd: OwnedFd,
+    tx: Sender<TerminalGuiInputMessage>,
+}
+
+impl Clone for TerminalGuiInput {
+    fn clone(&self) -> Self {
+        Self {
+            write_fd: self.write_fd.try_clone().unwrap(),
+            tx: self.tx.clone(),
+        }
+    }
 }
 
 impl TerminalGuiInput {
-    pub fn new(rtx: Sender<TerminalGuiInputMessage>) -> Self {
-        Self { rtx }
+    pub fn new(turm: Arc<Mutex<Turm>>, write_fd: OwnedFd) -> Self {
+        let (tx, rx) = mpsc::channel::<TerminalGuiInputMessage>();
+        let terminal_input = Self { write_fd, tx };
+
+        // Start the input handling thread immediately
+        Self::start_input_thread(Arc::clone(&turm), terminal_input.write_fd.as_raw_fd(), rx);
+
+        terminal_input
+    }
+
+    fn start_input_thread(
+        turm: Arc<Mutex<Turm>>,
+        write_fd_raw: i32,
+        rx: Receiver<TerminalGuiInputMessage>,
+    ) {
+        thread::spawn(move || loop {
+            if let Ok(input) = rx.recv() {
+                match input {
+                    TerminalGuiInputMessage::Text(text) => {
+                        let _ = nix::unistd::write(write_fd_raw, &text);
+                    }
+                    TerminalGuiInputMessage::ScrollUp(delta) => {
+                        let mut t = turm.lock().unwrap();
+                        t.scroll_up(delta, false);
+                    }
+                    TerminalGuiInputMessage::ScrollDown(delta) => {
+                        let mut t = turm.lock().unwrap();
+                        t.scroll_down(delta, false);
+                    }
+                }
+            }
+        });
     }
 
     pub fn write_input_to_terminal(&self, input: &InputState) {
@@ -73,7 +122,7 @@ impl TerminalGuiInput {
                     let n = key.name().chars().next().unwrap();
                     let mut m = n as u8;
                     m &= 0b1001_1111;
-                    let _ = self.rtx.send(TerminalGuiInputMessage::Text(vec![m]));
+                    let _ = self.tx.send(TerminalGuiInputMessage::Text(vec![m]));
                     None
                 }
                 Event::MouseWheel {
@@ -83,11 +132,11 @@ impl TerminalGuiInput {
                 } => {
                     if delta.y > 0.0 {
                         let _ = self
-                            .rtx
+                            .tx
                             .send(TerminalGuiInputMessage::ScrollDown(delta.y as u32));
                     } else {
                         let _ = self
-                            .rtx
+                            .tx
                             .send(TerminalGuiInputMessage::ScrollUp(delta.y.abs() as u32));
                     }
                     None
@@ -96,7 +145,7 @@ impl TerminalGuiInput {
             };
 
             if let Some(text) = text {
-                let _ = self.rtx.send(TerminalGuiInputMessage::Text(text.into()));
+                let _ = self.tx.send(TerminalGuiInputMessage::Text(text.into()));
             }
         }
     }
