@@ -27,7 +27,7 @@ impl TerminalGuiInput {
                     key: Key::Backspace,
                     pressed: true,
                     ..
-                } => Some("\u{8}"),
+                } => Some("\x7F"),
                 Event::Key {
                     key: Key::Enter,
                     pressed: true,
