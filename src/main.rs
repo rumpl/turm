@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use gui::egui::EguiImpl;
+use gui::gtk4::Gtk4Impl;
 use gui::Gui;
 use turm::Turm;
 
@@ -36,13 +37,15 @@ fn main() {
             let turm_arc = Arc::new(Mutex::new(Turm::new(cols, rows)));
 
             // Create and run the GUI implementation
-            let gui = EguiImpl::new(fd, turm_arc, cols, rows);
+            // let gui = EguiImpl::new(fd, turm_arc, cols, rows);
+            // gui.run();
+            let gui = Gtk4Impl::new(fd, turm_arc, cols, rows);
             gui.run();
         }
 
         nix::unistd::ForkResult::Child => {
             std::env::set_var("TERM", "turm");
-            std::env::set_var("TERMINFO", "/home/rumpl/dev/turm/res");
+            std::env::set_var("TERMINFO", "/Users/rumpl/hack/turm/res");
             let command = c"/bin/bash";
             let args = [command];
             let _ = nix::unistd::execvp(command, &args);

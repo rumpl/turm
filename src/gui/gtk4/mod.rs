@@ -139,41 +139,74 @@ impl Gui for Gtk4Impl {
 
                 // Render terminal content
                 let sections = terminal.grid.sections();
-
+                // println!("{}", terminal.grid);
+                let mut current_row = 0;
+                let mut current_col = 0;
                 for section in &sections.sections {
                     // Set colors
                     let fg = section.style.fg;
                     let bg = section.style.bg;
 
-                    cr.set_source_rgb(fg.0[0] as f64, fg.0[1] as f64, fg.0[2] as f64);
+                    // Set foreground color based on the section style
+                    cr.set_source_rgb(
+                        fg.0[0] as f64 / 255.0,
+                        fg.0[1] as f64 / 255.0,
+                        fg.0[2] as f64 / 255.0,
+                    );
 
                     // Get text for this section
-                    let text = &sections.text[section.offset..section.len];
+                    let section_text = &sections.text[section.offset..section.len];
 
-                    // Calculate position
-                    let x = ((section.offset % terminal.columns) as f32 * char_width) as f64;
-                    let y = ((section.offset / terminal.columns) as f32 * char_height) as f64;
+                    // Calculate starting position
+                    let x = (current_col as f32 * char_width) as f64;
+                    let y = (current_row as f32 * char_height) as f64;
 
                     // Draw background if needed
                     if bg.0[0] != 0 || bg.0[1] != 0 || bg.0[2] != 0 {
-                        cr.set_source_rgb(bg.0[0] as f64, bg.0[1] as f64, bg.0[2] as f64);
-                        cr.rectangle(
-                            x,
-                            y,
-                            text.len() as f64 * char_width as f64,
-                            char_height as f64,
+                        // Set background color
+                        cr.set_source_rgb(
+                            bg.0[0] as f64 / 255.0,
+                            bg.0[1] as f64 / 255.0,
+                            bg.0[2] as f64 / 255.0,
                         );
-                        let _ = cr.fill();
 
-                        // Reset to foreground color
-                        cr.set_source_rgb(fg.0[0] as f64, fg.0[1] as f64, fg.0[2] as f64);
+                        // Draw backgrounds line by line
+                        let mut current_x = x;
+                        let mut current_y = y;
+                        let mut chars_in_line = 0;
+
+                        for c in section_text.chars() {
+                            if c == '\n' || chars_in_line == terminal.columns {
+                                // Draw background for this line
+                                let width = chars_in_line as f64 * char_width as f64;
+                                cr.rectangle(current_x, current_y, width, char_height as f64);
+                                cr.fill().expect("Failed to fill background");
+
+                                // Move to next line
+                                current_y += char_height as f64;
+                                current_x = x;
+                                chars_in_line = 0;
+                            } else {
+                                chars_in_line += 1;
+                            }
+                        }
+
+                        // Draw background for the last line
+                        if chars_in_line > 0 {
+                            let width = chars_in_line as f64 * char_width as f64;
+                            cr.rectangle(current_x, current_y, width, char_height as f64);
+                            cr.fill().expect("Failed to fill background");
+                        }
+
+                        // Reapply foreground color
+                        cr.set_source_rgb(
+                            fg.0[0] as f64 / 255.0,
+                            fg.0[1] as f64 / 255.0,
+                            fg.0[2] as f64 / 255.0,
+                        );
                     }
 
-                    // Create layout for this text
-                    let section_layout = pangocairo::create_layout(cr);
-                    section_layout.set_font_description(Some(&font_desc));
-
-                    // Apply text attributes
+                    // Create attributes for text styling
                     let attr_list = pango::AttrList::new();
                     if section.style.bold {
                         let attr = pango::AttrInt::new_weight(pango::Weight::Bold);
@@ -188,12 +221,93 @@ impl Gui for Gtk4Impl {
                         attr_list.insert(attr);
                     }
 
-                    section_layout.set_attributes(Some(&attr_list));
-                    section_layout.set_text(text);
+                    // Process text character by character for precise positioning
+                    let mut current_x = x;
+                    let mut current_y = y;
+                    let mut col = current_col;
+                    let mut line_count = 0;
+                    let mut last_line_chars = 0;
 
-                    // Position and draw text
-                    cr.move_to(x, y);
-                    pangocairo::show_layout(cr, &section_layout);
+                    // Split text into lines first
+                    let lines = section_text.split('\n');
+
+                    for (line_idx, line) in lines.enumerate() {
+                        if line_idx > 0 {
+                            // For subsequent lines after a newline, reset to column 0
+                            current_x = 0.0;
+                            current_y += char_height as f64;
+                            col = 0;
+                            line_count += 1;
+                        }
+
+                        // If the line is empty (just a newline), skip further processing
+                        if line.is_empty() {
+                            last_line_chars = 0;
+                            continue;
+                        }
+
+                        // Draw the current line
+                        cr.move_to(current_x, current_y);
+                        let line_layout = pangocairo::create_layout(cr);
+                        line_layout.set_font_description(Some(&font_desc));
+                        line_layout.set_attributes(Some(&attr_list));
+
+                        // Check if this line needs wrapping
+                        if col + line.chars().count() > terminal.columns {
+                            // Handle wrapping - draw only up to the end of the current terminal row
+                            let mut chars_done = 0;
+
+                            // Process the line in chunks that fit within terminal width
+                            let line_chars = line.chars().collect::<Vec<_>>();
+
+                            while chars_done < line_chars.len() {
+                                let remaining_cols = if chars_done == 0 {
+                                    terminal.columns - col
+                                } else {
+                                    terminal.columns
+                                };
+
+                                let chunk_size =
+                                    std::cmp::min(remaining_cols, line_chars.len() - chars_done);
+                                let chunk: String = line_chars[chars_done..chars_done + chunk_size]
+                                    .iter()
+                                    .collect();
+
+                                // Draw this chunk
+                                let chunk_x = if chars_done == 0 { current_x } else { 0.0 };
+                                cr.move_to(chunk_x, current_y);
+
+                                let chunk_layout = pangocairo::create_layout(cr);
+                                chunk_layout.set_font_description(Some(&font_desc));
+                                chunk_layout.set_attributes(Some(&attr_list));
+                                chunk_layout.set_text(&chunk);
+                                pangocairo::show_layout(cr, &chunk_layout);
+
+                                // Move to next line if needed
+                                chars_done += chunk_size;
+                                if chars_done < line_chars.len() {
+                                    current_y += char_height as f64;
+                                    line_count += 1;
+                                }
+                            }
+
+                            // Update last_line_chars to the remaining characters on the last line
+                            last_line_chars = (line.chars().count() - (terminal.columns - col))
+                                % terminal.columns;
+                            if last_line_chars == 0 && line.chars().count() > 0 {
+                                last_line_chars = terminal.columns;
+                            }
+                        } else {
+                            // Line fits entirely on the current row
+                            line_layout.set_text(line);
+                            pangocairo::show_layout(cr, &line_layout);
+                            last_line_chars = col + line.chars().count();
+                        }
+                    }
+
+                    // Update current_row and current_col for next section
+                    current_row += line_count;
+                    current_col = last_line_chars % terminal.columns;
                 }
 
                 // Draw cursor if visible
