@@ -197,8 +197,8 @@ impl Gui for Gtk4Impl {
             let window_clone = window.clone();
             // Setup drawing callback
             drawing_area.set_draw_func(move |_, cr, width, height| {
-                // Fill the background with black
-                cr.set_source_rgb(0.0, 0.0, 0.0);
+                // Fill the background
+                cr.set_source_rgb(46.0 / 255.0, 51.0 / 255.0, 63.0 / 255.0);
                 cr.rectangle(0.0, 0.0, width as f64, height as f64);
                 let _ = cr.fill();
 
@@ -241,7 +241,6 @@ impl Gui for Gtk4Impl {
 
                 // Render terminal content
                 let sections = terminal.grid.sections();
-                // println!("{}", terminal.grid);
                 let mut current_row = 0;
                 let mut current_col = 0;
                 for section in &sections.sections {
@@ -570,172 +569,13 @@ impl Gui for Gtk4Impl {
 
             window.add_controller(key_controller);
 
-            // Add mouse controller for selection
-            let mouse_controller = gtk::EventControllerMotion::new();
-            let selection_clone = selection.clone();
-            let drawing_area_clone = drawing_area.clone();
-
-            // Track mouse button state
-            let gesture_click = gtk::GestureClick::new();
-            gesture_click.set_button(1); // Left button
-
-            // Clone variables for the first closure
-            let selection_clone1 = selection_clone.clone();
-            let drawing_area_clone1 = drawing_area_clone.clone();
-
-            gesture_click.connect_pressed(move |_, _n_press, x, y| {
-                let mut selection_lock = selection_clone1.lock().unwrap();
-
-                // Calculate character dimensions (should match drawing code)
-                let char_width = width_for_font_size(font_size);
-                let char_height = height_for_font_size(font_size);
-
-                // Convert mouse coordinates to terminal coordinates
-                let term_x = (x / char_width as f64) as usize;
-                let term_y = (y / char_height as f64) as usize;
-
-                // Update selection start
-                selection_lock.start = Position {
-                    x: term_x,
-                    y: term_y,
-                };
-                selection_lock.end = Position {
-                    x: term_x,
-                    y: term_y,
-                };
-                selection_lock.active = true;
-
-                // Redraw to show selection
-                drawing_area_clone1.queue_draw();
-            });
-
-            // Clone variables for the motion closure
-            let selection_clone2 = selection_clone.clone();
-            let drawing_area_clone2 = drawing_area_clone.clone();
-
-            mouse_controller.connect_motion(move |_, x, y| {
-                let mut selection_lock = selection_clone2.lock().unwrap();
-
-                // Only update if selection is active (mouse button is pressed)
-                if selection_lock.active {
-                    // Calculate character dimensions (should match drawing code)
-                    let char_width = width_for_font_size(font_size);
-                    let char_height = height_for_font_size(font_size);
-
-                    // Convert mouse coordinates to terminal coordinates
-                    let term_x = (x / char_width as f64) as usize;
-                    let term_y = (y / char_height as f64) as usize;
-
-                    // Update selection end
-                    selection_lock.end = Position {
-                        x: term_x,
-                        y: term_y,
-                    };
-
-                    // Redraw to show updated selection
-                    drawing_area_clone2.queue_draw();
-                }
-            });
-
-            let gesture_click_release = gtk::GestureClick::new();
-            gesture_click_release.set_button(1); // Left button
-
-            // Get clipboard for copy operations
-            let clipboard = window.clipboard();
-            // Clone clipboard early for use in multiple closures
-            let clipboard_for_release = clipboard.clone();
-            let clipboard_for_context = clipboard.clone();
-
-            let turm_copy = turm_clone.clone();
-            let selection_copy = selection.clone();
-            let drawing_area_clone3 = drawing_area_clone.clone();
-
-            gesture_click_release.connect_released(move |_, _n_press, _x, _y| {
-                let selection_lock = selection_copy.lock().unwrap();
-                let turm_lock = turm_copy.lock().unwrap();
-
-                // If this was a click without drag, clear selection
-                if selection_lock.start.x == selection_lock.end.x
-                    && selection_lock.start.y == selection_lock.end.y
-                {
-                    // This was just a click without drag, clear selection
-                    std::mem::drop(selection_lock);
-                    selection_copy.lock().unwrap().clear();
-                } else {
-                    // Get selected text and copy to clipboard if Ctrl is pressed
-                    let selected_text = selection_lock.get_selected_text(&turm_lock);
-
-                    // Automatically copy selection to clipboard
-                    if !selected_text.is_empty() {
-                        clipboard_for_release.set_text(&selected_text);
-                    }
-                }
-
-                drawing_area_clone3.queue_draw();
-            });
-
-            // Add context menu for copy
-            let gesture_right_click = gtk::GestureClick::new();
-            gesture_right_click.set_button(3); // Right button
-
-            let turm_context = turm_clone.clone();
-            let selection_context = selection.clone();
-            let drawing_area_clone4 = drawing_area_clone.clone();
-
-            gesture_right_click.connect_pressed(move |_, _n_press, x, y| {
-                let selection_lock = selection_context.lock().unwrap();
-                let turm_lock = turm_context.lock().unwrap();
-
-                if selection_lock.active {
-                    let selected_text = selection_lock.get_selected_text(&turm_lock);
-                    if !selected_text.is_empty() {
-                        let menu = gtk::PopoverMenu::builder().build();
-                        let box_layout = gtk::Box::new(gtk::Orientation::Vertical, 5);
-
-                        let copy_button = gtk::Button::with_label("Copy");
-                        let clipboard_copy = clipboard_for_context.clone();
-                        let text_to_copy = selected_text.clone();
-
-                        copy_button.connect_clicked(move |_| {
-                            clipboard_copy.set_text(&text_to_copy);
-                        });
-
-                        box_layout.append(&copy_button);
-                        menu.set_child(Some(&box_layout));
-
-                        // Set the parent using the correct method for GTK4
-                        menu.set_parent(&drawing_area_clone4);
-                        menu.set_pointing_to(Some(&gtk::gdk::Rectangle::new(
-                            x as i32, y as i32, 1, 1,
-                        )));
-                        menu.popup();
-                    }
-                }
-            });
-
-            // Add the event controllers to the drawing area
-            drawing_area.add_controller(mouse_controller);
-            drawing_area.add_controller(gesture_click);
-            drawing_area.add_controller(gesture_click_release);
-            drawing_area.add_controller(gesture_right_click);
-
             // Show all widgets
             window.show();
+
+            window.present();
         });
 
         // Run the GTK application
         app.run();
     }
-}
-
-// Helper function to calculate width for font size
-fn width_for_font_size(font_size: f32) -> f32 {
-    // This is an approximation - for a monospace font, width is typically around 60% of the font size
-    font_size * 0.6
-}
-
-// Helper function to calculate height for font size
-fn height_for_font_size(font_size: f32) -> f32 {
-    // For most monospace fonts, the height is about 1.2-1.3 times the font size
-    font_size // * 1.2
 }
