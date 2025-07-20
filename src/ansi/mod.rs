@@ -215,7 +215,8 @@ fn color_8bit(item: u8) -> Color {
             (item - 16) & 0b0001_1100,
             (item - 16) & 0b0000_0011,
         ),
-        _ => panic!("unknown sgr {}", item),
+        // For any unsupported color code, return WHITE as default instead of panicking
+        _ => Color::WHITE,
     }
 }
 
