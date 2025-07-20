@@ -163,8 +163,8 @@ impl From<u8> for GraphicRendition {
             92 => Self::ForegroundColor(Color::LIGHT_GREEN),
             93 => Self::ForegroundColor(Color::LIGHT_YELLOW),
             94 => Self::ForegroundColor(Color::LIGHT_BLUE),
-            95 => Self::ForegroundColor(Color::MAGENTA),
-            96 => Self::ForegroundColor(Color::CYAN),
+            95 => Self::ForegroundColor(Color::LIGHT_MAGENTA),
+            96 => Self::ForegroundColor(Color::LIGHT_CYAN),
             97 => Self::ForegroundColor(Color::WHITE),
             40 => Self::BackgroundColor(Color::BLACK),
             41 => Self::BackgroundColor(Color::RED),
@@ -180,8 +180,8 @@ impl From<u8> for GraphicRendition {
             102 => Self::BackgroundColor(Color::LIGHT_GREEN),
             103 => Self::BackgroundColor(Color::LIGHT_YELLOW),
             104 => Self::BackgroundColor(Color::LIGHT_BLUE),
-            105 => Self::BackgroundColor(Color::MAGENTA),
-            106 => Self::BackgroundColor(Color::CYAN),
+            105 => Self::BackgroundColor(Color::LIGHT_MAGENTA),
+            106 => Self::BackgroundColor(Color::LIGHT_CYAN),
             107 => Self::BackgroundColor(Color::WHITE),
             // For any unsupported code, return a default color instead of panicking
             // This handles cases like SGR 38 used by nvim and other terminals

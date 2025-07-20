@@ -10,7 +10,9 @@ impl Color {
     pub const LIGHT_GRAY: Self = Self::from_rgb(220, 220, 220);
     pub const WHITE: Self = Self::from_rgb(229, 232, 239);
     pub const MAGENTA: Self = Self::from_rgb(180, 141, 172);
+    pub const LIGHT_MAGENTA: Self = Self::from_rgb(220, 180, 210);
     pub const CYAN: Self = Self::from_rgb(136, 191, 207);
+    pub const LIGHT_CYAN: Self = Self::from_rgb(180, 230, 240);
 
     pub const BROWN: Self = Self::from_rgb(165, 42, 42);
     pub const DARK_RED: Self = Self::from_rgb(0x8B, 0, 0);
