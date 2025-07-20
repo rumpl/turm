@@ -139,6 +139,11 @@ pub enum GraphicRendition {
     Reset,
     Underline,
     Italic,
+    Dim,
+    Blink,
+    Reverse,
+    Hidden,
+    StrikeThrough,
 }
 
 impl From<u8> for GraphicRendition {
@@ -153,16 +158,14 @@ impl From<u8> for GraphicRendition {
             36 => Self::ForegroundColor(Color::CYAN),
             37 => Self::ForegroundColor(Color::WHITE),
 
-            /*
-                        90 => Self::ForegroundGrey,
-                        91 => Self::ForegroundBrightRed,
-                        92 => Self::ForegroundBrightGreen,
-                        93 => Self::ForegroundBrightYellow,
-                        94 => Self::ForegroundBrightBlue,
-                        95 => Self::ForegroundBrightMagenta,
-                        96 => Self::ForegroundBrightCyan,
-                        97 => Self::ForegroundBrightWhite,
-            */
+            90 => Self::ForegroundColor(Color::GRAY),
+            91 => Self::ForegroundColor(Color::LIGHT_RED),
+            92 => Self::ForegroundColor(Color::LIGHT_GREEN),
+            93 => Self::ForegroundColor(Color::LIGHT_YELLOW),
+            94 => Self::ForegroundColor(Color::LIGHT_BLUE),
+            95 => Self::ForegroundColor(Color::MAGENTA),
+            96 => Self::ForegroundColor(Color::CYAN),
+            97 => Self::ForegroundColor(Color::WHITE),
             40 => Self::BackgroundColor(Color::BLACK),
             41 => Self::BackgroundColor(Color::RED),
             42 => Self::BackgroundColor(Color::GREEN),
@@ -172,18 +175,17 @@ impl From<u8> for GraphicRendition {
             46 => Self::BackgroundColor(Color::CYAN),
             47 => Self::BackgroundColor(Color::WHITE),
 
-            /*
-                    100 => Self::BackgroundGrey,
-                    101 => Self::BackgroundBrightRed,
-                    102 => Self::BackgroundBrightGreen,
-                    103 => Self::BackgroundBrightYellow,
-                    104 => Self::BackgroundBrightBlue,
-                    105 => Self::BackgroundBrightMagenta,
-                    106 => Self::BackgroundBrightCyan,
-                    107 => Self::BackgroundBrightWhite,
-            */
-            // TODO: Why would we get a panic for an unknown sgr 38 when we run nvim?
-            _ => Self::ForegroundColor(Color::WHITE), // panic!("unknown sgr {}", item),
+            100 => Self::BackgroundColor(Color::GRAY),
+            101 => Self::BackgroundColor(Color::LIGHT_RED),
+            102 => Self::BackgroundColor(Color::LIGHT_GREEN),
+            103 => Self::BackgroundColor(Color::LIGHT_YELLOW),
+            104 => Self::BackgroundColor(Color::LIGHT_BLUE),
+            105 => Self::BackgroundColor(Color::MAGENTA),
+            106 => Self::BackgroundColor(Color::CYAN),
+            107 => Self::BackgroundColor(Color::WHITE),
+            // For any unsupported code, return a default color instead of panicking
+            // This handles cases like SGR 38 used by nvim and other terminals
+            _ => Self::ForegroundColor(Color::WHITE),
         }
     }
 }
@@ -352,10 +354,20 @@ impl Ansi {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Reset));
                                 } else if params.len() == 1 && params[0] == 1 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Bold));
-                                } else if params.len() == 1 && params[0] == 4 {
-                                    res.push(AnsiOutput::Sgr(GraphicRendition::Underline));
+                                } else if params.len() == 1 && params[0] == 2 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Dim));
                                 } else if params.len() == 1 && params[0] == 3 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Italic));
+                                } else if params.len() == 1 && params[0] == 4 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Underline));
+                                } else if params.len() == 1 && params[0] == 5 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Blink));
+                                } else if params.len() == 1 && params[0] == 7 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Reverse));
+                                } else if params.len() == 1 && params[0] == 8 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::Hidden));
+                                } else if params.len() == 1 && params[0] == 9 {
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::StrikeThrough));
                                 } else if params.is_empty() || params[0] == 0 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
                                         Color::BLACK,
@@ -389,10 +401,8 @@ impl Ansi {
                                     )));
                                 } else {
                                     for param in params {
-                                        // TODO: ugly hack to only take the color for now until we
-                                        // properly handle all the graphic rendition things, like
-                                        // "bold" for example
-                                        if (30..=47).contains(&param) {
+                                        // Handle all standard and bright colors
+                                        if (30..=47).contains(&param) || (90..=97).contains(&param) || (100..=107).contains(&param) {
                                             res.push(AnsiOutput::Sgr((param as u8).into()));
                                         }
                                     }
