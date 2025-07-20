@@ -403,7 +403,10 @@ impl Ansi {
                                 } else {
                                     for param in params {
                                         // Handle all standard and bright colors
-                                        if (30..=47).contains(&param) || (90..=97).contains(&param) || (100..=107).contains(&param) {
+                                        if (30..=47).contains(&param)
+                                            || (90..=97).contains(&param)
+                                            || (100..=107).contains(&param)
+                                        {
                                             res.push(AnsiOutput::Sgr((param as u8).into()));
                                         }
                                     }
