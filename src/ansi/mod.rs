@@ -149,6 +149,16 @@ pub enum GraphicRendition {
 impl From<u8> for GraphicRendition {
     fn from(item: u8) -> Self {
         match item {
+            0 => Self::Reset,
+            1 => Self::Bold,
+            2 => Self::Dim,
+            3 => Self::Italic,
+            4 => Self::Underline,
+            5 => Self::Blink,
+            7 => Self::Reverse,
+            8 => Self::Hidden,
+            9 => Self::StrikeThrough,
+            
             30 => Self::ForegroundColor(Color::BLACK),
             31 => Self::ForegroundColor(Color::RED),
             32 => Self::ForegroundColor(Color::GREEN),
@@ -166,6 +176,7 @@ impl From<u8> for GraphicRendition {
             95 => Self::ForegroundColor(Color::LIGHT_MAGENTA),
             96 => Self::ForegroundColor(Color::LIGHT_CYAN),
             97 => Self::ForegroundColor(Color::WHITE),
+            
             40 => Self::BackgroundColor(Color::BLACK),
             41 => Self::BackgroundColor(Color::RED),
             42 => Self::BackgroundColor(Color::GREEN),
@@ -183,6 +194,7 @@ impl From<u8> for GraphicRendition {
             105 => Self::BackgroundColor(Color::LIGHT_MAGENTA),
             106 => Self::BackgroundColor(Color::LIGHT_CYAN),
             107 => Self::BackgroundColor(Color::WHITE),
+            
             // For any unsupported code, return a default color instead of panicking
             // This handles cases like SGR 38 used by nvim and other terminals
             _ => Self::ForegroundColor(Color::WHITE),
@@ -351,8 +363,14 @@ impl Ansi {
                         match d.func {
                             ansi_codes::SGR => {
                                 let params = parse_params(&d.params);
-                                if params.len() == 1 && params[0] == 0 {
+                                if params.is_empty() || (params.len() == 1 && params[0] == 0) {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Reset));
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
+                                        Color::BLACK,
+                                    )));
+                                    res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
+                                        Color::WHITE,
+                                    )));
                                 } else if params.len() == 1 && params[0] == 1 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Bold));
                                 } else if params.len() == 1 && params[0] == 2 {
@@ -369,13 +387,6 @@ impl Ansi {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::Hidden));
                                 } else if params.len() == 1 && params[0] == 9 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::StrikeThrough));
-                                } else if params.is_empty() || params[0] == 0 {
-                                    res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
-                                        Color::BLACK,
-                                    )));
-                                    res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
-                                        Color::WHITE,
-                                    )));
                                 } else if params.len() >= 3 && params[0] == 38 && params[1] == 5 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
                                         color_8bit(params[2] as u8),
