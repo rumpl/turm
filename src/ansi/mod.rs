@@ -58,6 +58,9 @@ impl CSIParser {
         } else if is_csi_terminator(b) {
             self.result.func = b;
             return Some(Ok(self.result.clone()));
+        } else {
+            // Invalid byte in CSI sequence
+            return Some(Err(CSIParserError::InvalidCSI));
         }
 
         None
@@ -70,9 +73,9 @@ struct OscParseResult {
 
 #[derive(Debug, PartialEq)]
 enum OscState {
-    Empty,
-    TitleStart,
-    Title,
+    Parameter,
+    WaitingSemicolon,
+    Payload,
 }
 
 #[derive(Debug)]
@@ -80,39 +83,56 @@ enum OscParserError {}
 
 #[derive(Debug)]
 struct OscParser {
-    title: Vec<char>,
+    parameter: Vec<char>,
+    payload: Vec<char>,
     state: OscState,
 }
 
 impl OscParser {
     fn new() -> Self {
         Self {
-            title: Vec::new(),
-            state: OscState::Empty,
+            parameter: Vec::new(),
+            payload: Vec::new(),
+            state: OscState::Parameter,
         }
     }
 
     fn push(&mut self, b: char) -> Option<Result<OscParseResult, OscParserError>> {
         let c = b as u8;
 
-        if c == ansi_codes::STRING_TERMINATOR || c == ansi_codes::BEL || c == ansi_codes::OSC_END {
+        // OSC sequences terminate with BEL (0x07) or ST (ESC \)
+        if c == ansi_codes::BEL {
             return Some(Ok(OscParseResult {
-                title: self.title.iter().collect(),
+                title: self.payload.iter().collect(),
             }));
         }
 
-        if self.state == OscState::Title {
-            self.title.push(b);
+        // Handle backslash as part of ST (ESC \) terminator
+        if c == b'\\' {
+            return Some(Ok(OscParseResult {
+                title: self.payload.iter().collect(),
+            }));
         }
 
-        if c == b'2' {
-            self.state = OscState::TitleStart;
-            return None;
-        }
-
-        if self.state == OscState::TitleStart {
-            self.state = OscState::Title;
-            return None;
+        match self.state {
+            OscState::Parameter => {
+                if c == b';' {
+                    self.state = OscState::Payload;
+                } else if c.is_ascii_digit() {
+                    self.parameter.push(b);
+                } else {
+                    // Invalid character in parameter, ignore
+                }
+            }
+            OscState::WaitingSemicolon => {
+                if c == b';' {
+                    self.state = OscState::Payload;
+                }
+                // Ignore other characters while waiting for semicolon
+            }
+            OscState::Payload => {
+                self.payload.push(b);
+            }
         }
 
         None
@@ -190,6 +210,7 @@ impl From<u8> for GraphicRendition {
 
 fn color_8bit(item: u8) -> Color {
     match item {
+        // Standard colors (0-7)
         0 => Color::BLACK,
         1 => Color::RED,
         2 => Color::GREEN,
@@ -199,6 +220,7 @@ fn color_8bit(item: u8) -> Color {
         6 => Color::CYAN,
         7 => Color::WHITE,
 
+        // Bright colors (8-15)
         8 => Color::GRAY,
         9 => Color::RED,
         10 => Color::GREEN,
@@ -208,12 +230,28 @@ fn color_8bit(item: u8) -> Color {
         14 => Color::CYAN,
         15 => Color::WHITE,
 
-        16..=231 => Color::from_rgb(
-            (item - 16) & 0b1110_0000,
-            (item - 16) & 0b0001_1100,
-            (item - 16) & 0b0000_0011,
-        ),
-        _ => panic!("unknown sgr {}", item),
+        // 216-color cube (16-231): 6x6x6 RGB cube
+        // Formula: index = 16 + 36*r + 6*g + b, where r,g,b are in [0,5]
+        // Each component maps from [0,5] to [0,255] as: value * 51 (approximately value * 255/5)
+        16..=231 => {
+            let idx = item - 16;
+            let r = (idx / 36) % 6;
+            let g = (idx / 6) % 6;
+            let b = idx % 6;
+            Color::from_rgb(
+                if r == 0 { 0 } else { r * 40 + 55 },
+                if g == 0 { 0 } else { g * 40 + 55 },
+                if b == 0 { 0 } else { b * 40 + 55 },
+            )
+        }
+
+        // Grayscale ramp (232-255): 24 shades of gray
+        232..=255 => {
+            let gray = (item - 232) * 10 + 8;
+            Color::from_rgb(gray, gray, gray)
+        }
+
+        _ => Color::WHITE, // Fallback for invalid color codes
     }
 }
 
@@ -371,7 +409,7 @@ impl Ansi {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
                                         color_8bit(params[2] as u8),
                                     )));
-                                } else if params.len() >= 3 && params[0] == 38 && params[1] == 2 {
+                                } else if params.len() >= 5 && params[0] == 38 && params[1] == 2 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::ForegroundColor(
                                         Color::from_rgb(
                                             params[2] as u8,
@@ -379,7 +417,7 @@ impl Ansi {
                                             params[4] as u8,
                                         ),
                                     )));
-                                } else if params.len() >= 3 && params[0] == 48 && params[1] == 2 {
+                                } else if params.len() >= 5 && params[0] == 48 && params[1] == 2 {
                                     res.push(AnsiOutput::Sgr(GraphicRendition::BackgroundColor(
                                         Color::from_rgb(
                                             params[2] as u8,
@@ -406,40 +444,41 @@ impl Ansi {
                             ansi_codes::CLEAR_EOS => res.push(AnsiOutput::ClearToEOS),
                             ansi_codes::CURSOR_POSITION | ansi_codes::HVP => {
                                 let params = parse_params(&d.params);
-                                let x = if params.len() <= 1 { 1 } else { params[1] };
-                                let y = if params.is_empty() { 1 } else { params[0] };
-                                res.push(AnsiOutput::MoveCursor(x - 1, y - 1));
+                                // CUP and HVP use row;column (y;x) format, defaulting to 1 if missing
+                                let row = if params.is_empty() { 1 } else { params[0].max(1) };
+                                let col = if params.len() <= 1 { 1 } else { params[1].max(1) };
+                                res.push(AnsiOutput::MoveCursor(col - 1, row - 1));
                             }
                             ansi_codes::CURSOR_HORIZONTAL_POSITION => {
                                 let params = parse_params(&d.params);
-                                let x = if params.is_empty() { 1 } else { params[0] };
-                                res.push(AnsiOutput::MoveCursorHorizontal(x));
+                                let col = if params.is_empty() { 1 } else { params[0].max(1) };
+                                res.push(AnsiOutput::MoveCursorHorizontal(col - 1));
                             }
                             ansi_codes::CURSOR_UP => {
                                 let params = parse_params(&d.params);
-                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                let amount = if params.is_empty() { 1 } else { params[0].max(1) };
                                 res.push(AnsiOutput::CursorUp(amount));
                             }
                             ansi_codes::CURSOR_DOWN => {
                                 let params = parse_params(&d.params);
-                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                let amount = if params.is_empty() { 1 } else { params[0].max(1) };
                                 res.push(AnsiOutput::CursorDown(amount));
                             }
                             ansi_codes::CURSOR_FORWARD => {
                                 let params = parse_params(&d.params);
-                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                let amount = if params.is_empty() { 1 } else { params[0].max(1) };
                                 res.push(AnsiOutput::CursorForward(amount));
                             }
                             ansi_codes::CURSOR_BACKWARD => {
                                 let params = parse_params(&d.params);
-                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                let amount = if params.is_empty() { 1 } else { params[0].max(1) };
                                 res.push(AnsiOutput::CursorBackward(amount));
                             }
                             ansi_codes::HIDE_CURSOR => res.push(AnsiOutput::HideCursor),
                             ansi_codes::SHOW_CURSOR => res.push(AnsiOutput::ShowCursor),
                             ansi_codes::DELETE_CHARACTER => {
                                 let params = parse_params(&d.params);
-                                let amount = if params.is_empty() { 1 } else { params[0] };
+                                let amount = if params.is_empty() { 1 } else { params[0].max(1) };
                                 res.push(AnsiOutput::DeleteCharacters(amount));
                             }
                             ansi_codes::DCS => {
@@ -484,6 +523,9 @@ fn parse_params(params: &[u8]) -> Vec<usize> {
 }
 
 fn parse_usize_param(param: &[u8]) -> usize {
-    let str = std::str::from_utf8(param).expect("Shoud be a number");
-    str.parse().map_or(0, |v| v)
+    if param.is_empty() {
+        return 0;
+    }
+    let str = std::str::from_utf8(param).expect("Should be a number");
+    str.parse().unwrap_or(0)
 }
